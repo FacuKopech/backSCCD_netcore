@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Model.Entities;
+
+namespace Data.Contracts
+{
+    public interface INotaRepositorie : IGenericRepositorie<Nota>
+    {
+        IEnumerable<Nota> GetNotasRecibidasPersona(int id);
+        IEnumerable<Nota> GetNotasEmitidasPersona(int id);        
+        Task<bool> ActualizarNotaLeida(Nota nota, string emailLogueado);
+        Task<bool> FirmaDeNota(Nota nota, string emailLogueado);
+        Nota ObtenerUltimaNotaAgregada();
+    }
+}
