@@ -22,7 +22,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 // Add services to the container.
 var connString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connString));
+    options.UseSqlServer(connString).EnableSensitiveDataLogging());
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 //builder.Services.AddControllersWithViews();
@@ -46,11 +46,10 @@ builder.Services.AddScoped<IHistorialAuditRepositorie, HistorialAuditRepositorio
 builder.Services.AddScoped<IReportesRepositorie, ReportesRepositorio>();
 builder.Services.AddScoped<IEventoRepositorie, EventoRepositorie>();
 builder.Services.AddScoped<IWeatherService, WeatherService>();
+builder.Services.AddScoped<IArchivosService, ArchivosService>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAusenciaCommand, AgregarAusenciaCommand>();
-builder.Services.AddScoped<IAusenciaDataLayerRepo, AusenciaRepositorie>();
-builder.Services.AddScoped<IAusenciaDataLayerRepo, AusenciaRepositorie>();
 builder.Services.AddScoped<IAusenciaDataLayerRepo, AusenciaRepositorie>();
 
 builder.Services.AddCors(options =>
