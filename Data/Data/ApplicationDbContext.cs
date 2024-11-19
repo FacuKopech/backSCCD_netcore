@@ -8,21 +8,13 @@ namespace Data
 {
     public class ApplicationDbContext : IdentityDbContext
     {
-        private ApplicationDbContext() { }
+        public Guid ContextId { get; } = Guid.NewGuid();
 
-        private static ApplicationDbContext _instance;
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
         }
-        public static ApplicationDbContext GetInstance()
-        {
-            if (_instance == null)
-            {
-                _instance = new ApplicationDbContext();
-            }
-            return _instance;
-        }
+        
         public virtual DbSet<Persona> Personas { get; set; }
         public virtual DbSet<Institucion> Instituciones { get; set; }
         public virtual DbSet<Aula> Aulas { get; set; }
@@ -50,17 +42,21 @@ namespace Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Persona>().HasOne(persona => persona.Usuario);
+            modelBuilder.Entity<Persona>().HasKey(persona => persona.Id);
 
             modelBuilder.Entity<Usuario>().HasMany(grupos => grupos.Grupos)
             .WithMany(usuarios => usuarios.Usuarios);
+            modelBuilder.Entity<Usuario>().HasKey(usuario => usuario.Id);
 
-            modelBuilder.Entity<LoginAudit>().HasOne(usuario => usuario.UsuarioLogueado);            
+            modelBuilder.Entity<LoginAudit>().HasOne(usuario => usuario.UsuarioLogueado);
+            modelBuilder.Entity<LoginAudit>().HasKey(loginAud => loginAud.Id);
 
             modelBuilder.Entity<Admin>()
             .HasDiscriminator<string>("Discriminator")
             .HasValue<Admin>("Admin");
 
             modelBuilder.Entity<Nota>().HasOne(nota => nota.Emisor);
+            modelBuilder.Entity<Nota>().HasKey(nota => nota.Id);
 
             modelBuilder.Entity<Nota>()
                 .HasMany(nota => nota.Destinatarios)
@@ -79,6 +75,7 @@ namespace Data
             modelBuilder.Entity<Evento>()
                 .HasMany(asistira => asistira.Asistiran)
                 .WithMany(eventosAsistire => eventosAsistire.EventosAsistire);
+            modelBuilder.Entity<Evento>().HasKey(evento => evento.Id);
 
             modelBuilder.Entity<Evento>()
                 .HasMany(noAsistira => noAsistira.NoAsistiran)
@@ -103,13 +100,16 @@ namespace Data
             modelBuilder.Entity<Alumno>().HasMany(asistenciaAlumno => asistenciaAlumno.Asistencias);
 
             modelBuilder.Entity<Ausencia>().HasMany(hijos => hijos.HijosConAusencia).WithMany(ausenciasDeAlumno => ausenciasDeAlumno.Ausencias);
+            modelBuilder.Entity<Ausencia>().HasKey(ausencia => ausencia.Id);
 
             modelBuilder.Entity<Aula>().HasMany(alumnos => alumnos.Alumnos);
             modelBuilder.Entity<Aula>().HasMany(asistencia => asistencia.Asistencias);
             modelBuilder.Entity<Aula>().HasOne(docente => docente.Docente);
+            modelBuilder.Entity<Aula>().HasKey(aula => aula.Id);
 
             modelBuilder.Entity<AsistenciaAlumno>().HasKey(aa => new { aa.AsistenciaId, aa.AlumnoId });
-            modelBuilder.Entity<Asistencia>().HasMany(asistenciaAlumno => asistenciaAlumno.AsistenciaAlumno);                        
+            modelBuilder.Entity<Asistencia>().HasMany(asistenciaAlumno => asistenciaAlumno.AsistenciaAlumno);
+            modelBuilder.Entity<Asistencia>().HasKey(asistenciaAlumno => asistenciaAlumno.Id);
         }
     }
 
