@@ -6,10 +6,11 @@ namespace Data.Repositories
 {
     public class AulaRepositorio : IAulaRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context; 
         private readonly IPersonaRepositorie _personaRepositorie;
-        public AulaRepositorio(IPersonaRepositorie personaRepositorie)
+        public AulaRepositorio(ApplicationDbContext context, IPersonaRepositorie personaRepositorie)
         {
+            _context = context;
             _personaRepositorie = personaRepositorie;
         }
         public void Agregar(Aula entity)
@@ -19,7 +20,7 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public void AgregarAlumnosAAula(int idAula, Persona alumno)
+        public void AgregarAlumnosAAula(Guid idAula, Persona alumno)
         {
             var aula = _context.Aulas.Where(x => x.Id == idAula)
                 .FirstOrDefault();
@@ -33,7 +34,7 @@ namespace Data.Repositories
             }
         }
 
-        public void AsignarDocenteAAula(int idAula, Persona docente)
+        public void AsignarDocenteAAula(Guid idAula, Persona docente)
         {
             var aula = _context.Aulas.Where(x => x.Id == idAula).FirstOrDefault();
             if (aula != null)
@@ -45,7 +46,7 @@ namespace Data.Repositories
             }
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             var aulaAEliminar = this.ObtenerAsync(id);
             if (aulaAEliminar != null)
@@ -67,18 +68,24 @@ namespace Data.Repositories
             }            
         }
 
-    
-
-        public Aula ObtenerAsync(int id)
+        public Aula ObtenerAsync(Guid id)
         {            
-            return _context.Aulas.Where(x => x.Id == id)
+            var aula = _context.Aulas.Where(x => x.Id == id)
                 .Include(i => i.Institucion)
                 .Include(d => d.Docente)
                 .Include(a => a.Asistencias).ThenInclude(asistencia => asistencia.AsistenciaAlumno)
                 .Include(alumnos => alumnos.Alumnos)
                 .FirstOrDefault();
+
+            if (aula != null)
+            {
+                return aula;
+            }
+
+            return null;   
         }
-        public IEnumerable<Alumno> ObtenerAlumnosAula(int id)
+
+        public IEnumerable<Alumno> ObtenerAlumnosAula(Guid id)
         {
             var aulaWAlumnos = _context.Aulas.Where(x => x.Id == id)
                 .Include(a => a.Alumnos).ThenInclude(ausenciaAlumno => ausenciaAlumno.Ausencias)
@@ -87,28 +94,31 @@ namespace Data.Repositories
 
             return aulaWAlumnos.Alumnos;
         }
-        public Aula ObtenerAulaDeAlumno(int idAlumno)
+        public Aula ObtenerAulaDeAlumno(Guid idAlumno)
         {
             var aulasWAlumnos = _context.Aulas
                 .Include(a => a.Alumnos)
                 .Include(docente => docente.Docente)
-                .Include(aula => aula.Asistencias)
-                .ThenInclude(asistencia => asistencia.AsistenciaAlumno)
+                .Include(aula => aula.Asistencias).ThenInclude(asistencia => asistencia.AsistenciaAlumno)
                 .ToList();
-            foreach (var aula in aulasWAlumnos)
+
+            if (aulasWAlumnos != null)
             {
-                foreach (var alumno in aula.Alumnos)
+                foreach (var aula in aulasWAlumnos)
                 {
-                    if (alumno.Id == idAlumno)
+                    foreach (var alumno in aula.Alumnos)
                     {
-                        return aula;
+                        if (alumno.Id == idAlumno)
+                        {
+                            return aula;
+                        }
                     }
                 }
             }
             return null;
         }
 
-        public IEnumerable<Aula> ObtenerAulasDocente(int id)
+        public IEnumerable<Aula> ObtenerAulasDocente(Guid id)
         {
             var aulasWDocente = _context.Aulas.Where(x => x.Docente != null)
                 .Include(d => d.Docente)
@@ -126,7 +136,7 @@ namespace Data.Repositories
             return aulasDeDocente;
         }
 
-        public Persona ObtenerDocenteDeAula(int AulaId)
+        public Persona ObtenerDocenteDeAula(Guid AulaId)
         {
             var aulaWDocente = _context.Aulas.Where(x => x.Id == AulaId)
                 .Include(d => d.Docente)
@@ -140,7 +150,7 @@ namespace Data.Repositories
             return _context.Aulas.ToList();
         }
 
-        public bool VerificarAlumnoEnAula(int idAlumno)
+        public bool VerificarAlumnoEnAula(Guid idAlumno)
         {
             var aulasWAlumnos = _context.Aulas
                 .Include(a => a.Alumnos)
@@ -158,7 +168,7 @@ namespace Data.Repositories
             return false;
         }
 
-        public void AgregarAsistenciaTomadaAula(int idAula, Asistencia nuevaAsistenciaTomada)
+        public void AgregarAsistenciaTomadaAula(Guid idAula, Asistencia nuevaAsistenciaTomada)
         {
             var aula = this.ObtenerAsync(idAula);
             if (aula!=null)
@@ -173,7 +183,7 @@ namespace Data.Repositories
             }
         }        
 
-        public ICollection<Aula> ObtenerAulasDeInstitucion(int id)
+        public ICollection<Aula> ObtenerAulasDeInstitucion(Guid id)
         {
             ICollection<Aula> aulasInstitucion = _context.Aulas.Where(x => x.Institucion.Id == id)
                 .Include(alumnos => alumnos.Alumnos).ThenInclude(x => x.Historiales)
@@ -182,7 +192,7 @@ namespace Data.Repositories
             return aulasInstitucion;
         }
 
-        public Aula ObtenerAulaDeHijo(int idHijo)
+        public Aula ObtenerAulaDeHijo(Guid idHijo)
         {
             var aulas = _context.Aulas
                 .Include(x => x.Alumnos)
@@ -200,12 +210,12 @@ namespace Data.Repositories
             return null;
         }
 
-        public Aula ObtenerAulaConAsistencias(int idAula)
+        public Aula ObtenerAulaConAsistencias(Guid idAula)
         {
             return _context.Aulas.Where(x => x.Id == idAula).Include(asistencias => asistencias.Asistencias).FirstOrDefault();
         }
 
-        public IEnumerable<Alumno> ObtenerAlumnosSinAula(int id)
+        public IEnumerable<Alumno> ObtenerAlumnosSinAula(Guid id)
         {
             var alumnosInstitucion = _context.Personas.Where(x => x is Alumno && ((Alumno)x).Institucion.Id == id).ToList();
             if (alumnosInstitucion != null && alumnosInstitucion.Count() > 0)
@@ -267,7 +277,7 @@ namespace Data.Repositories
             }
         }
 
-        public IEnumerable<Persona> ObtenerDocentesSinAulaAsignada(int id)
+        public IEnumerable<Persona> ObtenerDocentesSinAulaAsignada(Guid id)
         {
             var usuarios = _context.Usuarios.Include(usuario => usuario.Grupos).ToList();
             if (usuarios.Count() > 0 && usuarios != null)
@@ -343,7 +353,7 @@ namespace Data.Repositories
             }
         }
 
-        public string CheckearValorRepetido(int idInstitucion, string nombreAula, string gradoAula, string DivisionAula)
+        public string CheckearValorRepetido(Guid idInstitucion, string nombreAula, string gradoAula, string DivisionAula)
         {
             foreach (var aula in _context.Aulas.Where(x => x.Institucion.Id == idInstitucion).Include(x => x.Docente).ToList())
             {
@@ -355,7 +365,7 @@ namespace Data.Repositories
             return "";
         }
 
-        public string CheckearValorRepetidoEdicionAula(int idAula, string nombreAula, string gradoAula, string DivisionAula)
+        public string CheckearValorRepetidoEdicionAula(Guid idAula, string nombreAula, string gradoAula, string DivisionAula)
         {
             foreach (var aula in _context.Aulas.Where(x => x.Id != idAula).ToList())
             {
@@ -367,7 +377,7 @@ namespace Data.Repositories
             return "";
         }
 
-        public bool EliminarAlumnoDeAula(int idAlumno)
+        public bool EliminarAlumnoDeAula(Guid idAlumno)
         {           
             var aulaDeAlumno = this.ObtenerAulaDeAlumno(idAlumno);            
             if (aulaDeAlumno != null)
@@ -378,20 +388,22 @@ namespace Data.Repositories
                     {
                         foreach (var asistenciaAula in aulaDeAlumno.Asistencias)
                         {
-                            foreach (var asistenciaTomada in asistenciaAula.AsistenciaAlumno)
+                            var asistenciasToRemove = asistenciaAula.AsistenciaAlumno
+                                .Where(asistenciaTomada => asistenciaTomada.AlumnoId == idAlumno)
+                                .ToList();
+
+                            foreach (var asistencia in asistenciasToRemove)
                             {
-                                if (asistenciaTomada.AlumnoId == idAlumno)
-                                {
-                                    asistenciaAula.AsistenciaAlumno.Remove(asistenciaTomada);
-                                    _context.Entry(asistenciaAula).State = EntityState.Modified;                                    
-                                }
+                                asistenciaAula.AsistenciaAlumno.Remove(asistencia);
+                                _context.Entry(asistenciaAula).State = EntityState.Modified;
                             }                            
                         }
-                        
+                        alumno.Asistencia = 0;
                         aulaDeAlumno.Alumnos.Remove(alumno);
                         aulaDeAlumno.CantidadAlumnos = aulaDeAlumno.CantidadAlumnos - 1;
                         _context.Entry(aulaDeAlumno).State = EntityState.Modified;
-                    
+                        _context.Entry(alumno).State = EntityState.Modified;
+
                         _context.SaveChanges();
                         return true;
                     }
@@ -420,7 +432,7 @@ namespace Data.Repositories
             }            
         }
 
-        public void EliminarDocenteDeAulasAsignadas(int idDocente)
+        public void EliminarDocenteDeAulasAsignadas(Guid idDocente)
         {
             var aulasDocente = this.ObtenerAulasDocente(idDocente);
             if (aulasDocente != null)

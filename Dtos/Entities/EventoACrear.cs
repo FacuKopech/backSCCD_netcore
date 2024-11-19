@@ -13,9 +13,8 @@ namespace Dtos.Entities
         public string Localidad { get; set; }
         public string Motivo { get; set; }
         public string Descripcion { get; set; }
-        public int IdAulaDestinada { get; set; }
-        public int IdCreador { get; set; }
-
+        public Guid IdAulaDestinada { get; set; }
+        public Guid IdCreador { get; set; }
         public IEnumerable<Persona>? Asistiran { get; set; }
         public IEnumerable<Persona>? NoAsistiran { get; set; }
         public IEnumerable<Persona>? TalVezAsistan { get; set; }

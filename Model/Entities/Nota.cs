@@ -8,7 +8,8 @@ namespace Model.Entities
     public class Nota
     {
         [Key]
-        public int Id { get; set; }
+        
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string Titulo { get; set; }
         public DateTime Fecha { get; set; }
         public bool? Leida { get; set; }

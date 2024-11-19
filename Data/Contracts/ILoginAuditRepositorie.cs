@@ -10,6 +10,6 @@ namespace Data.Contracts
     public interface ILoginAuditRepositorie : IGenericRepositorie<LoginAudit>
     {
         IEnumerable<LoginAudit> ObtenerLoginsDelMes();
-        IEnumerable<LoginAudit> ObtenerLoginsDeUsuario(int userId);
+        IEnumerable<LoginAudit> ObtenerLoginsDeUsuario(Guid userId);
     }
 }

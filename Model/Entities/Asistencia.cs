@@ -5,7 +5,7 @@ namespace Model.Entities
     public class Asistencia
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         public DateTime FechaAsistenciaTomada { get; set; }
         public ICollection<AsistenciaAlumno>? AsistenciaAlumno = new List<AsistenciaAlumno>();        
     }

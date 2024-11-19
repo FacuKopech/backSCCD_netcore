@@ -12,10 +12,9 @@ namespace Model.Entities
         public Ausencia()
         {            
             currentState = new PendingState(this);
-        }       
-
+        }
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string Motivo { get; set; }
         public DateTime FechaComienzo { get; set; }
         public DateTime FechaFin { get; set; }

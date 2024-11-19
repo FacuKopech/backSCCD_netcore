@@ -2,8 +2,8 @@
 {
     public class AsistenciaAlumno
     {      
-        public int AsistenciaId { get; set; }        
-        public int AlumnoId { get; set; }        
+        public Guid AsistenciaId { get; set; }        
+        public Guid AlumnoId { get; set; }        
         public string Estado { get; set; } //presente o ausente
     }
 }

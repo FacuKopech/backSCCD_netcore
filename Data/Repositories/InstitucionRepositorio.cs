@@ -11,7 +11,12 @@ namespace Data.Repositories
 {
     public class InstitucionRepositorio : IInstitucionRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
+
+        public InstitucionRepositorio(ApplicationDbContext context)
+        {
+            _context = context;
+        }
         public InstitucionRepositorio()
         {
         }
@@ -21,7 +26,7 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             var institucion = _context.Instituciones.Where(x => x.Id == id).FirstOrDefault();
             _context.Instituciones.Remove(institucion);
@@ -34,10 +39,15 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public Institucion ObtenerAsync(int id)
+        public Institucion ObtenerAsync(Guid id)
         {
-            return _context.Instituciones.FirstOrDefault(x => x.Id == id);
-                
+            var institucion = _context.Instituciones.Where(x => x.Id == id).FirstOrDefault();
+
+            if (institucion != null)
+            {
+                return institucion;
+            }
+            return null;
         }
 
         public IEnumerable<Institucion> ObtenerTodosAsync()

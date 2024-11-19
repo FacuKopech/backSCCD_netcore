@@ -13,13 +13,14 @@ namespace Data.Repositories
 {
     public class PersonaRepositorio : IPersonaRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
 
-        public PersonaRepositorio()
+        public PersonaRepositorio(ApplicationDbContext context)
         {
+            _context = context;
         }
 
-        public void ActualizarNotasRecibidas(int id, Nota nuevaNota)
+        public void ActualizarNotasRecibidas(Guid id, Nota nuevaNota)
         {
             var destinatario = _context.Personas.FirstOrDefault(x => x.Id == id);
             if (destinatario != null)
@@ -59,7 +60,7 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             var persona = _context.Personas.Where(x => x.Id == id).FirstOrDefault();
             if (persona != null)
@@ -98,14 +99,20 @@ namespace Data.Repositories
             }           
         }
 
-        public Alumno GetAlumno(int id)
+        public Alumno GetAlumno(Guid id)
         {
-            return (Alumno)_context.Personas.Where(x => x.Id == id)
-                .Include(h => ((Alumno)h).Historiales)
-                .Include(a => ((Alumno)a).Ausencias)
+            var alumno = _context.Personas.OfType<Alumno>()
+                .Where(x => x.Id == id)
+                .Include(h => h.Historiales)
+                .Include(a => a.Ausencias)
                 .Include(i => i.Institucion)
-                .Include(asistencias => ((Alumno)asistencias).Asistencias)
-                .FirstOrDefault();
+                .Include(asistencias => asistencias.Asistencias).FirstOrDefault();
+            if (alumno != null)
+            {
+                return alumno;
+            }
+
+            return null;
         }
        
 
@@ -122,35 +129,105 @@ namespace Data.Repositories
         {
             if (entity.Usuario != null)
             {
-                var existingUsuario = _context.Usuarios.Find(entity.Usuario.Id);
+                var existingUsuario = _context.Usuarios.Local.FirstOrDefault(u => u.Id == entity.Usuario.Id)
+                    ?? _context.Usuarios.AsNoTracking().FirstOrDefault(u => u.Id == entity.Usuario.Id);
 
-                if (existingUsuario == null)
+                if (existingUsuario != null)
+                {
+                    entity.Usuario = existingUsuario;
+                }
+                else
                 {
                     _context.Attach(entity.Usuario);
                     _context.Entry(entity.Usuario).Collection(u => u.Grupos).Load();
                 }
-                else
-                {
-                    entity.Usuario = existingUsuario;
-                }
-                _context.Entry(entity).State = EntityState.Modified;
-                //foreach (var trackedUsuario in _context.Usuarios.Local.ToList())
-                //{
-                //    if (trackedUsuario.Id != entity.Usuario.Id || flag)
-                //    {
-                //        _context.Entry(trackedUsuario).State = EntityState.Detached;
-                //    }
-
-                //    if (trackedUsuario.Id == entity.Usuario.Id && !flag)
-                //    {
-                //        flag = true;
-                //    }
-                //}
             }
             _context.SaveChanges();
         }
 
-        public IEnumerable<Persona> ObtenerAlumnosInstitucion(int id)
+        public void ModificarHijosAsignados(Persona entity, string idHijo, string accion)
+        {
+            if (entity != null)
+            {
+                Persona personaConHijos = null;
+                if (entity is Padre)
+                {
+                    personaConHijos = _context.Personas.OfType<Padre>().Include(h => h.Hijos).Where(p => p.Id == entity.Id).FirstOrDefault();
+                }else if (entity is Docente)
+                {
+                    personaConHijos = _context.Personas.OfType<Docente>().Include(h => h.Hijos).Where(p => p.Id == entity.Id).FirstOrDefault();
+                }else if (entity is Directivo)
+                {
+                    personaConHijos = _context.Personas.OfType<Directivo>().Include(h => h.Hijos).Where(p => p.Id == entity.Id).FirstOrDefault();
+                }
+                if (idHijo != "00000000-0000-0000-0000-000000000000")
+                {
+                    var hijo = _context.Personas.OfType<Alumno>().Where(p => p.Id == Guid.Parse(idHijo)).FirstOrDefault();
+
+                    if (personaConHijos != null && hijo != null)
+                    {
+                        if (accion == "Desasignar")
+                        {
+                            if (personaConHijos is Padre padre)
+                            {
+                                padre.Hijos.Remove(hijo);
+                            }
+                            else if (personaConHijos is Docente docente)
+                            {
+                                docente.Hijos.Remove(hijo);
+                            }
+                            else if (personaConHijos is Directivo directivo)
+                            {
+                                directivo.Hijos.Remove(hijo);
+                            }
+                        }else if (accion == "Asignar")
+                        {
+                            if (personaConHijos is Padre padre)
+                            {
+                                if (!padre.Hijos.Any(h => h.Id == hijo.Id))
+                                {
+                                    padre.Hijos.Add(hijo);
+                                }
+                                 
+                            }
+                            else if (personaConHijos is Docente docente)
+                            {
+                                if (!docente.Hijos.Any(h => h.Id == hijo.Id))
+                                {
+                                    docente.Hijos.Add(hijo);
+                                }
+                            }
+                            else if (personaConHijos is Directivo directivo)
+                            {
+                                if (!directivo.Hijos.Any(h => h.Id == hijo.Id))
+                                {
+                                    directivo.Hijos.Add(hijo);
+                                }
+                            }
+                        }                        
+                    }
+                }
+                else if(idHijo == "00000000-0000-0000-0000-000000000000")
+                {
+                    if (personaConHijos is Padre padre)
+                    {
+                        padre.Hijos.Clear();
+                    }
+                    else if (personaConHijos is Docente docente)
+                    {
+                        docente.Hijos.Clear();
+                    }
+                    else if (personaConHijos is Directivo directivo)
+                    {
+                        directivo.Hijos.Clear();
+                    }
+                }
+                _context.Entry(personaConHijos).Collection("Hijos").IsModified = true;
+                _context.SaveChanges();
+            }            
+        }
+
+        public IEnumerable<Persona> ObtenerAlumnosInstitucion(Guid id)
         {
             List<Persona> alumnos = _context.Personas.Where(x => x is Alumno)
                 .Include(p => p.Institucion).ToList();
@@ -168,57 +245,72 @@ namespace Data.Repositories
         }
 
       
-        public IEnumerable<Persona> ObtenerHijos(int id)
-        {            
-            var persona = _context.Personas.Where(x => x.Id == id)
-                .Include(i => i.Institucion)                                
-                .FirstOrDefault();
+        public IEnumerable<Persona> ObtenerHijos(Guid id)
+        {
+            var padre = _context.Personas.OfType<Padre>()
+                .Include(p => p.Hijos)
+                .FirstOrDefault(p => p.Id == id);
 
-            if (persona is Padre padre)
+            if (padre != null)
             {
-                _context.Entry(padre).Collection(p => p.Hijos).Load();
-                return ((Padre)persona).Hijos;
+                return padre.Hijos;
             }
-            else if (persona is Docente docente)
+
+            var docente = _context.Personas.OfType<Docente>()
+                .Include(d => d.Hijos)
+                .FirstOrDefault(d => d.Id == id);
+
+            if (docente != null)
             {
-                _context.Entry(docente).Collection(d => d.Hijos).Load();
-                return ((Docente)persona).Hijos;
+                return docente.Hijos;
             }
-            else if (persona is Directivo directivo)
+
+            var directivo = _context.Personas.OfType<Directivo>()
+                .Include(di => di.Hijos)
+                .FirstOrDefault(di => di.Id == id);
+
+            if (directivo != null)
             {
-                _context.Entry(directivo).Collection(di => di.Hijos).Load();
-                return ((Directivo)persona).Hijos;
+                return directivo.Hijos;
             }
 
             return null;
         }
-        public Persona ObtenerAsync(int id)
+        public Persona ObtenerAsync(Guid id)
         {
-            return _context.Personas.Where(x => x.Id == id)
-                .Include(p => p.Usuario).ThenInclude(user => user.Grupos)
+            var persona = _context.Personas.OfType<Persona>().Where(x => x.Id == id)
                 .Include(i => i.Institucion)
+                .Include(p => p.Usuario).ThenInclude(user => user.Grupos)
                 .Include(nf => nf.NotasFirmadas)
                 .Include(nl => nl.NotasLeidas)
-                .Include(nr => nr.NotasRecibidas)
-                .ThenInclude(e => e.Emisor)
-                .FirstOrDefault();
+                .Include(nr => nr.NotasRecibidas).ThenInclude(e => e.Emisor).FirstOrDefault();
 
+            if (persona != null)
+            {
+                return persona;
+            }
+
+            return null;
         }
 
-        public Persona ObtenerPersonaDeUsuario(int idUser)
+        public Persona ObtenerPersonaDeUsuario(Guid idUser)
         {
-          var persona = _context.Personas.Where(x => x.Usuario.Id == idUser)
-                    .Include(p => p.Usuario).ThenInclude(g => g.Grupos)
-                    .Include(i => i.Institucion)
-                    .Include(nl => nl.NotasLeidas)
-                    .Include(nf => nf.NotasFirmadas)
-                    .Include(nr => nr.NotasRecibidas).ThenInclude(e => e.Emisor)
-                    .Include(ea => ea.EventosAsistire)
-                    .Include(ena => ena.EventosNoAsistire)
-                    .Include(eta => eta.EventosTalVezAsista)
-                    .FirstOrDefault();
-
-            return persona;
+            var persona = _context.Personas.OfType<Persona>().Where(x => x.Usuario.Id == idUser)
+                .Include(p => p.Usuario).ThenInclude(g => g.Grupos)
+                .Include(i => i.Institucion)
+                .Include(nl => nl.NotasLeidas)
+                .Include(nf => nf.NotasFirmadas)
+                .Include(nr => nr.NotasRecibidas).ThenInclude(e => e.Emisor)
+                .Include(ea => ea.EventosAsistire)
+                .Include(ena => ena.EventosNoAsistire)
+                .Include(eta => eta.EventosTalVezAsista).FirstOrDefault();
+            
+            if (persona != null)
+            {
+                return persona;
+            }
+       
+            return null;
         }
 
         public IEnumerable<Persona> ObtenerTodosAsync()
@@ -255,14 +347,14 @@ namespace Data.Repositories
             return padres;
         }
 
-        public IEnumerable<Persona> ObtenerAlumno(int idAlumno)
+        public IEnumerable<Persona> ObtenerAlumno(Guid idAlumno)
         {
             return _context.Personas.Where(x => x is Alumno)                
                 .ToList();
 
         }
 
-        public void AgregarHijosAPadre(int idPadre, Persona alumno)
+        public void AgregarHijosAPadre(Guid idPadre, Persona alumno)
         {
             var persona = _context.Personas.Where(x => x.Id == idPadre).FirstOrDefault();
             var alumnoAgregado = _context.Personas.FirstOrDefault(x => x.Id == alumno.Id);
@@ -288,14 +380,14 @@ namespace Data.Repositories
 
         }
 
-        public void ActualizarHistorialAlumno(int idAlumno, Historial nuevoHistorial)
+        public void ActualizarHistorialAlumno(Guid idAlumno, Historial nuevoHistorial)
         {
             var alumno = (Alumno)_context.Personas.Where(x => x.Id == idAlumno)
                 .Include(h => ((Alumno)h).Historiales)
                 .FirstOrDefault();
             if (alumno != null)
             {
-                var historial = alumno.Historiales.FirstOrDefault(x => x.IdHistorial == nuevoHistorial.IdHistorial);
+                var historial = alumno.Historiales.FirstOrDefault(x => x.Id == nuevoHistorial.Id);
                 if (historial == null)
                 {
                     alumno.Historiales.Add(nuevoHistorial);
@@ -311,12 +403,12 @@ namespace Data.Repositories
             }
         }
 
-        public void ActualizarAusenciaAlumno(int idAlumno, Ausencia nuevaAusencia, string accion)
+        public void ActualizarAusenciaAlumno(Guid idAlumno, Ausencia nuevaAusencia, string accion)
         {
-            var alumno = (Alumno)_context.Personas.Where(x => x.Id == idAlumno)
-                .Include(a => ((Alumno)a).Ausencias)
+            var alumno = _context.Personas.OfType<Alumno>().Where(x => x.Id == idAlumno)
+                .Include(a => a.Ausencias)
                 .FirstOrDefault();
-            if (alumno != null)
+            if (alumno != null && alumno.Ausencias != null)
             {
                 var ausencia = alumno.Ausencias.FirstOrDefault(x => x.Id == nuevaAusencia.Id);
                 if (ausencia != null)
@@ -327,16 +419,22 @@ namespace Data.Repositories
                         _context.Entry(alumno).State = EntityState.Modified;
                         _context.Entry(ausencia).State = EntityState.Modified;
                     }
+                    else if(accion == "A")
+                    {
+                        alumno.Ausencias.Add(nuevaAusencia);
+                        _context.Entry(alumno).State = EntityState.Modified;
+                        _context.Entry(nuevaAusencia).State = EntityState.Modified;
+                    }
                     else
                     {
                         alumno.Ausencias.Remove(ausencia);
-                    }                  
-                }                
+                    }
+                }
                 _context.SaveChanges();
             }
         }
 
-        public IEnumerable<Persona> ObtenerPersonasInstitucion(Persona tipoPersona, int idInstitucion)
+        public IEnumerable<Persona> ObtenerPersonasInstitucion(Persona tipoPersona, Guid idInstitucion)
         {
             IEnumerable<Persona> personas = new List<Persona>();
             List<Persona> docentesYPadres = new List<Persona>();
@@ -368,7 +466,7 @@ namespace Data.Repositories
             }            
         }
 
-        public Task<bool> EliminarHistorial(int idAlumno, Historial historial)
+        public Task<bool> EliminarHistorial(Guid idAlumno, Historial historial)
         {
             var alumno = (Alumno)_context.Personas.Where(x => x.Id == idAlumno)
                 .Include(h => ((Alumno)h).Historiales)
@@ -376,7 +474,7 @@ namespace Data.Repositories
 
             if (alumno != null)
             {
-                var historialAEliminar = alumno.Historiales.FirstOrDefault(x => x.IdHistorial == historial.IdHistorial);
+                var historialAEliminar = alumno.Historiales.FirstOrDefault(x => x.Id == historial.Id);
                 if (historialAEliminar != null)
                 {
                     alumno.Historiales.Remove(historialAEliminar);
@@ -392,47 +490,23 @@ namespace Data.Repositories
             return new Task<bool>(() => false);
         }
 
-        public IEnumerable<Persona> ObtenerPadresDeAlumno(int id)
+        public IEnumerable<Persona> ObtenerPadresDeAlumno(Guid id)
         {
-            List<Persona> padresDeAlumno = new List<Persona>();
-            foreach (var persona in _context.Personas.Where(x => 
-            (x is Padre && ((Padre)x).Hijos.Count() > 0) ||
-            (x is Docente && ((Docente)x).Hijos.Count() > 0) ||
-            (x is Directivo && ((Directivo)x).Hijos.Count() > 0)))
+            var personas = _context.Personas
+               .Where(persona =>
+                   (persona is Padre && ((Padre)persona).Hijos.Any(h => h.Id == id)) ||
+                   (persona is Docente && ((Docente)persona).Hijos.Any(h => h.Id == id)) ||
+                   (persona is Directivo && ((Directivo)persona).Hijos.Any(h => h.Id == id))).ToList();
+
+            if (personas != null)
             {
-                if (persona is Padre)
-                {
-                    foreach (var hijo in ((Padre)persona).Hijos)
-                    {
-                        if (hijo.Id == id)
-                        {
-                            padresDeAlumno.Add(persona);
-                        }
-                    }
-                }else if (persona is Docente)
-                {
-                    foreach (var hijo in ((Docente)persona).Hijos)
-                    {
-                        if (hijo.Id == id)
-                        {
-                            padresDeAlumno.Add(persona);
-                        }
-                    }
-                }else if (persona is Directivo)
-                {
-                    foreach (var hijo in ((Directivo)persona).Hijos)
-                    {
-                        if (hijo.Id == id)
-                        {
-                            padresDeAlumno.Add(persona);
-                        }
-                    }
-                }
-            }            
-            return padresDeAlumno;
+                return personas;
+            }
+
+            return null;
         }
 
-        public Persona ObtenerDirectivoInstitucion(int id)
+        public Persona ObtenerDirectivoInstitucion(Guid id)
         {
             var personas = _context.Personas.Where(x => x.Institucion.Id == id && !(x is Alumno)).Include(u => u.Usuario).ThenInclude(g => g.Grupos);
             if (personas != null)
@@ -452,7 +526,7 @@ namespace Data.Repositories
             return null;
         }
 
-        public void ActualizarAsistenciaAlumno(int idAlumno)
+        public void ActualizarAsistenciaAlumno(Guid idAlumno)
         {
             var alumno = _context.Personas.Where(x => x.Id == idAlumno).FirstOrDefault();
             if (alumno != null)
@@ -462,7 +536,7 @@ namespace Data.Repositories
             }
         }
 
-        public List<string> ObtenerEmailsDeTodasLasPersonasDeUnaInstitucion(int id)
+        public List<string> ObtenerEmailsDeTodasLasPersonasDeUnaInstitucion(Guid id)
         {
             var destinatarios = _context.Personas.Where(x => x.Institucion.Id == id && x.Email != null);
             List<string> emails = new List<string>();
@@ -634,7 +708,7 @@ namespace Data.Repositories
             return emailsDestinatarios;
         }
 
-        public void AgregarAsistenciaAlumno(int idAlumno, AsistenciaAlumno nuevaAsistenciaAlumno)
+        public void AgregarAsistenciaAlumno(Guid idAlumno, AsistenciaAlumno nuevaAsistenciaAlumno)
         {
             var alumno = (Alumno)_context.Personas.Where(x => x.Id == idAlumno).Include(asistenciaAlumno => ((Alumno)asistenciaAlumno).Asistencias)
                 .FirstOrDefault();
@@ -667,14 +741,59 @@ namespace Data.Repositories
             return personasSistema;
         }
 
-        public IEnumerable<Persona> ObtenerPadresDocentesDirectivosInstitucion(int idInstitucion)
+        public IEnumerable<Persona> ObtenerPadresDocentesDirectivosInstitucion(Guid idInstitucion)
         {
             return _context.Personas.Where(x => (!(x is Alumno)) && x.Institucion.Id == idInstitucion).ToList();
         }
 
-        public IEnumerable<Persona> ObtenerDocentesDeInstitucion(int id)
+        public IEnumerable<Persona> ObtenerDocentesDeInstitucion(Guid id)
         {
             return _context.Personas.Where(x => x is Docente && x.Institucion.Id == id).ToList();
+        }
+
+        public Task<bool> EliminarAusenciasAlumno(Guid idAlumno)
+        {
+            var alumno = (Alumno)_context.Personas.Where(x => x.Id == idAlumno).Include(ausencias => ((Alumno)ausencias).Ausencias)
+                .FirstOrDefault();
+
+            if (alumno != null && alumno.Ausencias.Count() > 0)
+            {
+                alumno.Ausencias.Clear();
+            }
+            else
+            {
+                return new Task<bool>(() => false);
+            }
+            _context.SaveChanges();
+            return new Task<bool>(() => true);
+        }
+
+        public Task<bool> ResetearFirmasHistorialesAlumno(Guid idAlumno)
+        {
+            Console.WriteLine($"PersonaRepositorio DbContext ID: {_context.ContextId}");
+
+            var alumno = (Alumno)_context.Personas.Where(x => x.Id == idAlumno).Include(historiales => ((Alumno)historiales).Historiales)
+                .FirstOrDefault();
+
+            if (alumno != null)
+            { 
+                foreach (var historial in alumno.Historiales)
+                {                    
+                    historial.Firmado = false;
+                }
+                _context.SaveChanges();
+                return new Task<bool>(() => true);
+            }
+            else
+            {
+                return new Task<bool>(() => false);
+            }  
+        }
+
+        public IEnumerable<Ausencia> ObtenerAusenciasAlumno(Guid idAlumno)
+        {
+            var alumno = (Alumno)_context.Personas.Include(a => ((Alumno)a).Ausencias).FirstOrDefault(p => p.Id == idAlumno);
+            return alumno.Ausencias.Where(ausencia => ausencia.Motivo != "Toma de asistencia - Hijo/a ausente").ToList();
         }
     }
 } 

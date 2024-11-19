@@ -10,7 +10,8 @@ namespace Model.Entities
 
         }
         [Key]
-        public int Id { get; set; }
+        
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string Nombre { get; set; }
         public string Apellido { get; set; }
         public int DNI { get; set; }

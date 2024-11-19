@@ -12,14 +12,19 @@ namespace Data.Repositories
 {
     public class AusenciaRepositorie : IAusenciaRepositorie, IAusenciaDataLayerRepo
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
+
+        public AusenciaRepositorie(ApplicationDbContext context)
+        {
+            _context = context;
+        }
         public void Agregar(Ausencia entity)
         {
             _context.Ausencias.Add(entity);
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             var ausencia = _context.Ausencias.Where(x => x.Id == id).FirstOrDefault();
             if (ausencia != null)
@@ -39,9 +44,15 @@ namespace Data.Repositories
             }
         }
 
-        public Ausencia ObtenerAsync(int id)
+        public Ausencia ObtenerAsync(Guid id)
         {
-            return _context.Ausencias.Where(x => x.Id == id).FirstOrDefault();
+            var ausencia = _context.Ausencias.Where(x => x.Id == id).FirstOrDefault();
+            if (ausencia != null)
+            {
+                return ausencia;
+            }
+
+            return null;
         }
         public void AceptarAusencia(Ausencia ausencia)
         {

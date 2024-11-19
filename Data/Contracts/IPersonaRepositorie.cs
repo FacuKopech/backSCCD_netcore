@@ -9,33 +9,33 @@ namespace Data.Contracts
 {
     public interface IPersonaRepositorie : IGenericRepositorie<Persona>
     {
-        Persona ObtenerPersonaDeUsuario(int idUser);
-
-        List<string> ObtenerEmailsDeTodasLasPersonasDeUnaInstitucion(int idInstitucion);
-
+        Persona ObtenerPersonaDeUsuario(Guid idUser);
+        List<string> ObtenerEmailsDeTodasLasPersonasDeUnaInstitucion(Guid idInstitucion);
         List<string> ObtenerEmailsParaDocente(Persona docenteLogueada);
         List<string> ObtenerEmailsParaPadre(Persona padreLogueado);
-        IEnumerable<Persona> ObtenerAlumnosInstitucion(int id);
+        IEnumerable<Persona> ObtenerAlumnosInstitucion(Guid id);
         IEnumerable<Persona> ObtenerAlumnosSistema();
         IEnumerable<Persona> ObtenerPersonasSistema();
-        IEnumerable<Persona> ObtenerHijos(int id);
-        IEnumerable<Persona> ObtenerPadresDeAlumno(int id);
-
-        Persona ObtenerDirectivoInstitucion(int id);
+        IEnumerable<Persona> ObtenerHijos(Guid id);
+        IEnumerable<Persona> ObtenerPadresDeAlumno(Guid id);
+        Persona ObtenerDirectivoInstitucion(Guid id);
         IEnumerable<Persona> ObtenerPadres();
         IEnumerable<Persona> GetDirectivosDocentesPadres();
-        void AgregarHijosAPadre(int idPadre, Persona alumno);
-        Alumno GetAlumno(int id);        
-        void ActualizarNotasRecibidas(int id, Nota nota);
-        void ActualizarHistorialAlumno(int idAlumno, Historial nuevoHistorial);
-        void ActualizarAusenciaAlumno(int idAlumno, Ausencia nuevaAusencia, string accion);        
-        void ActualizarAsistenciaAlumno(int idAlumno);
-        void AgregarAsistenciaAlumno(int idAlumno, AsistenciaAlumno nuevaAsistenciaAlumno);
-        Task<bool> EliminarHistorial(int idAlumno, Historial historial);
-
-        IEnumerable<Persona> ObtenerPersonasInstitucion(Persona tipoPersona, int idInstitucion);
-        IEnumerable<Persona> ObtenerPadresDocentesDirectivosInstitucion(int idInstitucion);
-        IEnumerable<Persona> ObtenerDocentesDeInstitucion(int id);
+        void AgregarHijosAPadre(Guid idPadre, Persona alumno);
+        void ModificarHijosAsignados(Persona entity, string idHijo, string accion);
+        Alumno GetAlumno(Guid id);        
+        void ActualizarNotasRecibidas(Guid id, Nota nota);
+        void ActualizarHistorialAlumno(Guid idAlumno, Historial nuevoHistorial);
+        void ActualizarAusenciaAlumno(Guid idAlumno, Ausencia nuevaAusencia, string accion);
+        Task<bool> EliminarAusenciasAlumno(Guid idAlumno);
+        IEnumerable<Ausencia> ObtenerAusenciasAlumno(Guid idAlumno);
+        void ActualizarAsistenciaAlumno(Guid idAlumno);
+        void AgregarAsistenciaAlumno(Guid idAlumno, AsistenciaAlumno nuevaAsistenciaAlumno);
+        Task<bool> EliminarHistorial(Guid idAlumno, Historial historial);
+        Task<bool> ResetearFirmasHistorialesAlumno(Guid idAlumno);
+        IEnumerable<Persona> ObtenerPersonasInstitucion(Persona tipoPersona, Guid idInstitucion);
+        IEnumerable<Persona> ObtenerPadresDocentesDirectivosInstitucion(Guid idInstitucion);
+        IEnumerable<Persona> ObtenerDocentesDeInstitucion(Guid id);
 
     }
 }

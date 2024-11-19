@@ -8,6 +8,6 @@ namespace Dtos
 {
     public class AlumnosExistentesAAgregar
     {
-        public IEnumerable<int> AlumnosSeleccionados { get; set; }
+        public IEnumerable<Guid> AlumnosSeleccionados { get; set; }
     }
 }

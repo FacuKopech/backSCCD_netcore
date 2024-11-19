@@ -11,16 +11,21 @@ namespace Data.Repositories
 {
     public class HistorialRepositorio : IHistorialRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
+
+        public HistorialRepositorio(ApplicationDbContext context)
+        {
+            _context = context;
+        }
         public void Agregar(Historial entity)
         {
             _context.Historiales.Add(entity);
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
-            var historial = _context.Historiales.Where(x => x.IdHistorial == id).FirstOrDefault();
+            var historial = _context.Historiales.Where(x => x.Id == id).FirstOrDefault();
             if (historial != null)
             {
                 _context.Historiales.Remove(historial);
@@ -30,7 +35,7 @@ namespace Data.Repositories
 
         public Task<bool> FirmarHistorial(Historial historial)
         {
-            var historialAModificar = _context.Historiales.Where(x => x.IdHistorial == historial.IdHistorial).FirstOrDefault();
+            var historialAModificar = _context.Historiales.Where(x => x.Id == historial.Id).FirstOrDefault();
             if (historialAModificar != null)
             {
                 historialAModificar.Firmado = true;
@@ -44,7 +49,7 @@ namespace Data.Repositories
 
         public void Modificar(Historial entity)
         {
-            var historial = _context.Historiales.Where(x => x.IdHistorial == entity.IdHistorial).FirstOrDefault();
+            var historial = _context.Historiales.Where(x => x.Id == entity.Id).FirstOrDefault();
             if (historial != null)
             {
                 historial.Descripcion = entity.Descripcion;
@@ -55,9 +60,15 @@ namespace Data.Repositories
             }
         }
 
-        public Historial ObtenerAsync(int id)
+        public Historial ObtenerAsync(Guid id)
         {
-            return _context.Historiales.Where(x => x.IdHistorial == id).FirstOrDefault();
+            var historial = _context.Historiales.Where(x => x.Id == id).FirstOrDefault();
+            if (historial != null)
+            {
+                return historial;
+            }
+            
+            return null;
         }
 
         public IEnumerable<Historial> ObtenerTodosAsync()

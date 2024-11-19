@@ -12,8 +12,8 @@ namespace Dtos
         public string NombreAula { get; set; }        
         public string GradoAula { get; set; }
         public string DivisionAula { get; set; }
-        public int InstitucionId { get; set; }
-        public IEnumerable<int> AlumnosSeleccionados { get; set; }
-        public int DocenteId { get; set; }
+        public Guid InstitucionId { get; set; }
+        public IEnumerable<Guid> AlumnosSeleccionados { get; set; }
+        public Guid DocenteId { get; set; }
     }
 }

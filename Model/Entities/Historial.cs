@@ -6,7 +6,7 @@ namespace Model.Entities
     public class Historial
     {
         [Key]
-        public int IdHistorial { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string Descripcion { get; set; }
         public DateTime Fecha { get; set; }
         public decimal? Calificacion { get; set; }

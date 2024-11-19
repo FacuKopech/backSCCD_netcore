@@ -14,7 +14,8 @@ namespace Model.Entities
 
         }
         [Key]
-        public int Id { get; set; }
+        
+        public Guid Id { get; set; } = Guid.NewGuid();
         public DateTime Fecha { get; set; }                
         public string Localidad { get; set; }
         public string Motivo { get; set; }

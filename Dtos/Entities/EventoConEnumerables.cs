@@ -9,7 +9,7 @@ namespace Dtos.Entities
 {
     public class EventoConEnumerables
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public DateTime Fecha { get; set; }
         public string Localidad { get; set; }
         public string Motivo { get; set; }

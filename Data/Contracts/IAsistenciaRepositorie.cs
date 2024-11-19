@@ -11,7 +11,7 @@ namespace Data.Contracts
     public interface IAsistenciaRepositorie : IGenericRepositorie<Asistencia>
     {
         Asistencia ObtenerUltimaAsistenciaAgregada();
-        Asistencia ObtenerAsistencia(int idAsistencia);
+        Asistencia ObtenerAsistencia(Guid idAsistencia);
 
         void AgregarAsistenciaAlumno(AsistenciaAlumno nuevaAsistenciaAlumno);
         

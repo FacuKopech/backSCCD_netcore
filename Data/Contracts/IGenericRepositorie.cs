@@ -9,9 +9,9 @@ namespace Data.Contracts
     public interface IGenericRepositorie<T> where T : class
     {
         IEnumerable<T> ObtenerTodosAsync();
-        T ObtenerAsync(int id);
+        T ObtenerAsync(Guid id);
         void Agregar(T entity);
-        void Borrar(int id);
+        void Borrar(Guid id);
         void Modificar(T entity);
 
 

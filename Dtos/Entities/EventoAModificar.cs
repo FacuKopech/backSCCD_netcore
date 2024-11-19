@@ -16,6 +16,6 @@ namespace Dtos.Entities
 
         public string Descripcion { get; set; }
 
-        public int IdAulaDestinada { get; set; }
+        public Guid IdAulaDestinada { get; set; }
     }
 }

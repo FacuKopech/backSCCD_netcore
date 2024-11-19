@@ -12,7 +12,12 @@ namespace Data.Repositories
 {
     public class LoginAuditRepositorio : ILoginAuditRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
+
+        public LoginAuditRepositorio(ApplicationDbContext context)
+        {
+            _context = context;
+        }
         public void Agregar(LoginAudit entity)
         {
             var existingUsuario = _context.Usuarios.Local.FirstOrDefault(u => u.Id == entity.UsuarioLogueado.Id)
@@ -38,7 +43,7 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             throw new NotImplementedException();
         }
@@ -49,7 +54,7 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public LoginAudit ObtenerAsync(int id)
+        public LoginAudit ObtenerAsync(Guid id)
         {
             throw new NotImplementedException();
         }
@@ -61,7 +66,7 @@ namespace Data.Repositories
             x.FechaYHoraLogin.Day <= currentDate.Day).Include(x => x.UsuarioLogueado).ToList();
         }
 
-        public IEnumerable<LoginAudit> ObtenerLoginsDeUsuario(int userId)
+        public IEnumerable<LoginAudit> ObtenerLoginsDeUsuario(Guid userId)
         {
             return _context.LoginAudit.Where(x => x.UsuarioLogueado.Id == userId).Include(x => x.UsuarioLogueado).ToList();
         }

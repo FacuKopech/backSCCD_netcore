@@ -10,7 +10,7 @@ namespace Dtos
     {
         public string Titulo { get; set; }
         public string Cuerpo { get; set; }
-        public IEnumerable<int> AulasDestinadas { get; set; }
+        public IEnumerable<Guid> AulasDestinadas { get; set; }
 
     }
 }

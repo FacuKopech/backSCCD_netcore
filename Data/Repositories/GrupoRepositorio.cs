@@ -11,7 +11,12 @@ namespace Data.Repositories
 {
     public class GrupoRepositorio : IGrupoRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
+
+        public GrupoRepositorio(ApplicationDbContext context)
+        {
+            _context = context;
+        }
         public GrupoRepositorio()
         {
         }
@@ -41,9 +46,11 @@ namespace Data.Repositories
                 }
             }          
         }
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
-            throw new NotImplementedException();
+            var group = _context.Grupos.Where(g => g.Id == id).FirstOrDefault();
+            _context.Grupos.Remove(group);
+            _context.SaveChanges();
         }
 
         public void Modificar(Grupo entity)
@@ -51,10 +58,18 @@ namespace Data.Repositories
             throw new NotImplementedException();
         }
 
-        public Grupo ObtenerAsync(int id)
+        public Grupo ObtenerAsync(Guid id)
         {
-            return _context.Grupos.Where(x => x.Id == id).Include(usuarios => usuarios.Usuarios).FirstOrDefault();
+            var grupo = _context.Grupos.Where(x => x.Id == id).Include(usuarios => usuarios.Usuarios).FirstOrDefault();
+
+            if (grupo != null)
+            {
+                return grupo;
+            }
+
+            return null;
         }
+
         public IEnumerable<Grupo> ObtenerTodosAsync()
         {
             return _context.Grupos.Include(users => users.Usuarios).ToList();

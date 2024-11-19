@@ -9,17 +9,17 @@ namespace Data.Contracts
 {
     public interface IEventoRepositorie : IGenericRepositorie<Evento>
     {
-        IEnumerable<Persona> ObtenerPersonasQueAsistiranAlEvento(int idEvento);
+        IEnumerable<Persona> ObtenerPersonasQueAsistiranAlEvento(Guid idEvento);
 
-        IEnumerable<Persona> ObtenerPersonasQueNoAsistiranAlEvento(int idEvento);
+        IEnumerable<Persona> ObtenerPersonasQueNoAsistiranAlEvento(Guid idEvento);
 
-        IEnumerable<Persona> ObtenerPersonasQueTalVezAsistanAlEvento(int idEvento);
+        IEnumerable<Persona> ObtenerPersonasQueTalVezAsistanAlEvento(Guid idEvento);
 
-        IEnumerable<Evento> ObtenerEventosDeInstitucion(int idInstitucion);
+        IEnumerable<Evento> ObtenerEventosDeInstitucion(Guid idInstitucion);
 
-        IEnumerable<Evento> ObtenerEventosConAulaDeDocente(int idDocente);
+        IEnumerable<Evento> ObtenerEventosConAulaDeDocente(Guid idDocente);
 
-        IEnumerable<Evento> ObtenerEventosParaPadre(int idAula);
+        IEnumerable<Evento> ObtenerEventosParaPadre(Guid idAula);
 
     }
 }

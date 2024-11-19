@@ -9,8 +9,8 @@ namespace Data.Contracts
 {
     public interface INotaRepositorie : IGenericRepositorie<Nota>
     {
-        IEnumerable<Nota> GetNotasRecibidasPersona(int id);
-        IEnumerable<Nota> GetNotasEmitidasPersona(int id);        
+        IEnumerable<Nota> GetNotasRecibidasPersona(Guid id);
+        IEnumerable<Nota> GetNotasEmitidasPersona(Guid id);        
         Task<bool> ActualizarNotaLeida(Nota nota, string emailLogueado);
         Task<bool> FirmaDeNota(Nota nota, string emailLogueado);
         Nota ObtenerUltimaNotaAgregada();

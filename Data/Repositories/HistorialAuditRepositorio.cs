@@ -10,14 +10,19 @@ namespace Data.Repositories
 {
     public class HistorialAuditRepositorio : IHistorialAuditRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
+
+        public HistorialAuditRepositorio(ApplicationDbContext context)
+        {
+            _context = context;
+        }
         public void Agregar(HistorialAudit entity)
         {
             _context.HistorialAudit.Add(entity);
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             throw new NotImplementedException();
         }
@@ -27,7 +32,7 @@ namespace Data.Repositories
             throw new NotImplementedException();
         }
 
-        public HistorialAudit ObtenerAsync(int id)
+        public HistorialAudit ObtenerAsync(Guid id)
         {
             throw new NotImplementedException();
         }

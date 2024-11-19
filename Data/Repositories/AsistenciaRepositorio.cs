@@ -1,12 +1,18 @@
 ﻿using Data.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Model.Entities;
+using System.Linq;
 
 namespace Data.Repositories
 {
     public class AsistenciaRepositorio : IAsistenciaRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
+
+        public AsistenciaRepositorio(ApplicationDbContext context)
+        {
+            _context = context;
+        }
         public void Agregar(Asistencia entity)
         {
             _context.AsistenciasTomadas.Add(entity);
@@ -19,7 +25,7 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             throw new NotImplementedException();
         }
@@ -34,14 +40,20 @@ namespace Data.Repositories
             }
         }
 
-        public Asistencia ObtenerAsistencia(int idAsistencia)
+        public Asistencia ObtenerAsistencia(Guid idAsistencia)
         {
             return _context.AsistenciasTomadas.Where(x => x.Id == idAsistencia).FirstOrDefault();
         }
 
-        public Asistencia ObtenerAsync(int id)
+        public Asistencia ObtenerAsync(Guid id)
         {
-            return _context.AsistenciasTomadas.Where(asistencia => asistencia.Id == id).FirstOrDefault();
+            var asistencia = _context.AsistenciasTomadas.Where(asistencia => asistencia.Id == id).FirstOrDefault();
+            if (asistencia != null)
+            {
+                return asistencia;
+            }
+
+            return null;
         }
 
         public IEnumerable<Asistencia> ObtenerTodosAsync()

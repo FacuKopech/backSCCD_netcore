@@ -17,6 +17,6 @@ namespace Dtos
         public string? Domicilio { get; set; }
         public Usuario? UsuarioSeleccionado { get; set; }
         public Institucion? InstitucionSeleccionada { get; set; }
-        public IEnumerable<int>? HijosSeleccionados { get; set; }
+        public IEnumerable<Guid>? HijosSeleccionados { get; set; }
     }
 }

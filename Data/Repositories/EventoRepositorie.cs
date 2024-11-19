@@ -11,7 +11,12 @@ namespace Data.Repositories
 {
     public class EventoRepositorie : IEventoRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
+        private readonly ApplicationDbContext _context;
+
+        public EventoRepositorie(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
         public void Agregar(Evento entity)
         {
@@ -19,7 +24,7 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             var evento = _context.Eventos.FirstOrDefault(evento => evento.Id == id);
             if (evento != null)
@@ -46,18 +51,23 @@ namespace Data.Repositories
             }
         }
 
-        public Evento ObtenerAsync(int id)
+        public Evento ObtenerAsync(Guid id)
         {
-            return _context.Eventos
+            var evento = _context.Eventos.Where(evento => evento.Id == id)
                 .Include(evento => evento.Asistiran)
                 .Include(evento => evento.NoAsistiran)
                 .Include(evento => evento.TalVezAsistan)
                 .Include(aula => aula.AulaDestinada)
-                .Include(creador => creador.Creador)
-                .FirstOrDefault(evento => evento.Id == id);
+                .Include(creador => creador.Creador).FirstOrDefault();
+
+            if (evento != null)
+            {
+                return evento;
+            }
+            return null;
         }
 
-        public IEnumerable<Evento> ObtenerEventosConAulaDeDocente(int idDocente)
+        public IEnumerable<Evento> ObtenerEventosConAulaDeDocente(Guid idDocente)
         {
             return _context.Eventos
                 .Include(creador => creador.Creador)
@@ -68,7 +78,7 @@ namespace Data.Repositories
                 .Where(x => x.AulaDestinada.Docente.Id == idDocente).ToList();
         }
 
-        public IEnumerable<Evento> ObtenerEventosDeInstitucion(int idInstitucion)
+        public IEnumerable<Evento> ObtenerEventosDeInstitucion(Guid idInstitucion)
         {
             return _context.Eventos
                 .Include(evento => evento.Asistiran)
@@ -80,7 +90,7 @@ namespace Data.Repositories
                 .Where(x => x.AulaDestinada.Institucion.Id == idInstitucion).ToList();
         }
 
-        public IEnumerable<Evento> ObtenerEventosParaPadre(int idAula)
+        public IEnumerable<Evento> ObtenerEventosParaPadre(Guid idAula)
         {
             return _context.Eventos
              .Include(creador => creador.Creador)
@@ -91,7 +101,7 @@ namespace Data.Repositories
              .Where(x => x.AulaDestinada.Id == idAula).ToList();
         }
 
-        public IEnumerable<Persona> ObtenerPersonasQueAsistiranAlEvento(int idEvento)
+        public IEnumerable<Persona> ObtenerPersonasQueAsistiranAlEvento(Guid idEvento)
         {
             var personas = _context.Personas
                 .Include(persona => persona.EventosAsistire)
@@ -107,7 +117,7 @@ namespace Data.Repositories
             return personasQueAsistiran;
         }
 
-        public IEnumerable<Persona> ObtenerPersonasQueNoAsistiranAlEvento(int idEvento)
+        public IEnumerable<Persona> ObtenerPersonasQueNoAsistiranAlEvento(Guid idEvento)
         {
             var personas = _context.Personas
                 .Include(persona => persona.EventosNoAsistire)
@@ -123,7 +133,7 @@ namespace Data.Repositories
             return personasQueNoAsistiran;
         }
 
-        public IEnumerable<Persona> ObtenerPersonasQueTalVezAsistanAlEvento(int idEvento)
+        public IEnumerable<Persona> ObtenerPersonasQueTalVezAsistanAlEvento(Guid idEvento)
         {
             var personas = _context.Personas
                 .Include(persona => persona.EventosTalVezAsista)
@@ -141,7 +151,10 @@ namespace Data.Repositories
 
         public IEnumerable<Evento> ObtenerTodosAsync()
         {
-            return _context.Eventos.ToList();
+            return _context.Eventos
+                .Include(c => c.Creador)
+                .Include(a => a.AulaDestinada)
+                .ToList();
         }
     }
 }

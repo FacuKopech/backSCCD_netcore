@@ -5,7 +5,8 @@ namespace Model.Entities
     public class Institucion
     {
         [Key]
-        public int Id { get; set; }
+       
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string Nombre { get; set; }
         public string Direccion { get; set; }
         public string Telefono { get; set; }

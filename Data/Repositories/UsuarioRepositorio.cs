@@ -12,7 +12,12 @@ namespace Data.Repositories
 {
     public class UsuarioRepositorio : IUsuarioRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();       
+        private readonly ApplicationDbContext _context;
+
+        public UsuarioRepositorio(ApplicationDbContext context)
+        {
+            _context = context;
+        }
         public UsuarioRepositorio()
         {
         }   
@@ -22,7 +27,7 @@ namespace Data.Repositories
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+        public void Borrar(Guid id)
         {
             var user = _context.Usuarios.Where(x => x.Id == id).FirstOrDefault();
             if (user != null)
@@ -58,12 +63,15 @@ namespace Data.Repositories
             }            
         }
 
-        public Usuario ObtenerAsync(int id)
+        public Usuario ObtenerAsync(Guid id)
         {
-            var user = _context.Usuarios.AsNoTracking().Where(x => x.Id == id)
-                .Include(u => u.Grupos).FirstOrDefault();
-            _context.Entry(user).State = EntityState.Detached;
-            return user;
+            var usuario = _context.Usuarios.Where(x => x.Id == id).Include(u => u.Grupos).FirstOrDefault();
+
+            if (usuario != null)
+            {
+                return usuario;
+            }
+            return null;
         }
 
         public Usuario ObtenerUserWthGroups(string username, string clave)
@@ -80,7 +88,7 @@ namespace Data.Repositories
             return _context.Usuarios.ToList();
         }
       
-        public void ActualizarClaveUser(int idUser, string claveNueva)
+        public void ActualizarClaveUser(Guid idUser, string claveNueva)
         {
             var user = _context.Usuarios.Where(x => x.Id == idUser)
                .FirstOrDefault();

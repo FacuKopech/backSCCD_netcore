@@ -11,9 +11,11 @@ namespace Data.Repositories
 {
     public class NotaRepositorio : INotaRepositorie
     {
-        ApplicationDbContext _context = ApplicationDbContext.GetInstance();
-        public NotaRepositorio()
+        private readonly ApplicationDbContext _context;
+
+        public NotaRepositorio(ApplicationDbContext context)
         {
+            _context = context;
         }
 
         public Task<bool> ActualizarNotaLeida(Nota nota, string emailLogueado)
@@ -48,14 +50,23 @@ namespace Data.Repositories
             return new Task<bool>(() => false);
 
         }
-            
+
         public void Agregar(Nota entity)
         {
+            var existingEntity = _context.ChangeTracker.Entries<Nota>()
+                .FirstOrDefault(e => e.Entity.Id == entity.Id);
+
+            if (existingEntity != null)
+            {
+                _context.Entry(existingEntity.Entity).State = EntityState.Detached;
+            }
+
             _context.Notas.Add(entity);
             _context.SaveChanges();
         }
 
-        public void Borrar(int id)
+
+        public void Borrar(Guid id)
         {
             var nota = _context.Notas.Where(x => x.Id == id)
                 .FirstOrDefault();
@@ -96,9 +107,9 @@ namespace Data.Repositories
             return new Task<bool>(() => false);
         }
 
-        public IEnumerable<Nota> GetNotasEmitidasPersona(int id)
+        public IEnumerable<Nota> GetNotasEmitidasPersona(Guid id)
         {
-            var notasEmitidas = _context.Notas.Where(x => x.Id != 0)
+            var notasEmitidas = _context.Notas.Where(x => x.Id != Guid.Empty)
                 .Include(e => e.Emisor)
                 .Include(r => r.Referido)
                 .Include(a => a.AulasDestinadas)
@@ -120,9 +131,11 @@ namespace Data.Repositories
             return notas;
         }
 
-        public IEnumerable<Nota> GetNotasRecibidasPersona(int id)
+        public IEnumerable<Nota> GetNotasRecibidasPersona(Guid id)
         {
             var persona = _context.Personas.Where(x => x.Id == id)
+                .Include(p => p.NotasRecibidas)
+                .ThenInclude(e => e.Emisor)
                 .Include(p => p.NotasRecibidas)
                 .ThenInclude(referido => referido.Referido)
                 .Include(notasFirmadas => notasFirmadas.NotasFirmadas)
@@ -143,16 +156,20 @@ namespace Data.Repositories
             }
         }
 
-        public Nota ObtenerAsync(int id)
+        public Nota ObtenerAsync(Guid id)
         {
-            var nota = _context.Notas.Where(x => x.Id == id)
+            var nota = _context.Notas.OfType<Nota>().Where(x => x.Id == id)
                 .Include(e => e.Emisor)
                 .Include(r => r.Referido)
                 .Include(a => a.AulasDestinadas).ThenInclude(aula => aula.Docente)
-                .Include(d => d.Destinatarios).ThenInclude(u => u.Usuario)
-                .FirstOrDefault();
+                .Include(d => d.Destinatarios).ThenInclude(u => u.Usuario).FirstOrDefault();
 
-            return nota;
+            if (nota != null)
+            {
+                return nota;
+            }
+
+            return null;
         }
 
         public IEnumerable<Nota> ObtenerTodosAsync()

@@ -11,7 +11,7 @@ namespace Data.Contracts
         Usuario ObtenerUserWthGroups(string username, string clave);
 
         Usuario ObtenerUserWthGroupsWithEmail(string email);
-        void ActualizarClaveUser(int idUser, string claveNueva);
+        void ActualizarClaveUser(Guid idUser, string claveNueva);
         void RecuperarClaveUser(string email, string claveNueva);   
         bool UsuarioExistente(string email);
         IEnumerable<Usuario> ObtenerUsuariosSistema();
