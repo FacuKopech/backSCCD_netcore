@@ -42,7 +42,7 @@ namespace SCCD.Controllers
        
         [HttpGet]
         [Route("/[controller]/[action]/{idHijo}")]        
-        public IActionResult ObtenerAulaDeHijo(int idHijo)
+        public IActionResult ObtenerAulaDeHijo(Guid idHijo)
         {
             try
             {
@@ -63,7 +63,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 var hijosPadreLogueado = _personaRepositorie.ObtenerHijos(personaLogueada.Id);
                 List<Aula> aulasHijos = new List<Aula>();
                 if (hijosPadreLogueado.Count() > 0)
@@ -108,7 +108,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idNota}")]
-        public IActionResult ObtenerAulasDestinadasNota(int idNota)
+        public IActionResult ObtenerAulasDestinadasNota(Guid idNota)
         {
             try
             {
@@ -139,7 +139,7 @@ namespace SCCD.Controllers
         {
             try
             {                
-                var docenteLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                var docenteLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 if (docenteLogueado == null)
                 {
                     return NotFound(false);
@@ -162,7 +162,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                var directivoLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                var directivoLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 if (directivoLogueado == null)
                 {
                     return NotFound(false);
@@ -181,11 +181,11 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idAula}")]
-        public IActionResult ObtenerAsistenciasAula(int idAula)
+        public IActionResult ObtenerAsistenciasAula(Guid idAula)
         {
             try
             {
-                if (idAula == 0)
+                if (idAula == Guid.Empty)
                 {
                     return BadRequest(false);
                 }
@@ -210,11 +210,11 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idAula}/{idAsistencia}/{esPresentes}")]
-        public IActionResult ObtenerAsistenciaAlumnos(int idAula, int idAsistencia, bool esPresentes)
+        public IActionResult ObtenerAsistenciaAlumnos(Guid idAula, Guid idAsistencia, bool esPresentes)
         {
             try
             {
-                if (idAula == 0 || idAsistencia == 0 || esPresentes == null)
+                if (idAula == Guid.Empty || idAsistencia == Guid.Empty || esPresentes == null)
                 {
                     return BadRequest(false);
                 }
@@ -291,11 +291,11 @@ namespace SCCD.Controllers
 
         [HttpPost]
         [Route("/[controller]/[action]")]
-        public IEnumerable<AlumnoConEnumerables> ObtenerAlumnosAula([FromBody] Dictionary<string, int> aulaData)
+        public IEnumerable<AlumnoConEnumerables> ObtenerAlumnosAula([FromBody] Dictionary<string, Guid> aulaData)
         {
             try
             {
-                int idAula = aulaData["idAula"];
+                Guid idAula = aulaData["idAula"];
                 var alumnosDeAula = _aulaRepositorie.ObtenerAlumnosAula(idAula);
                 if (alumnosDeAula.Count() == 0)
                 {
@@ -335,7 +335,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idInstitucion}")]
-        public IActionResult ObtenerPorcentajesAsistenciaAulas(int idInstitucion)
+        public IActionResult ObtenerPorcentajesAsistenciaAulas(Guid idInstitucion)
         {
             try
             {
@@ -376,7 +376,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idInstitucion}")]
-        public IActionResult ObtenerAlumnosSinAula(int idInstitucion)
+        public IActionResult ObtenerAlumnosSinAula(Guid idInstitucion)
         {
             try
             {
@@ -398,7 +398,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idInstitucion}")]
-        public IActionResult ObtenerDocentesSinAulaAsignada(int idInstitucion)
+        public IActionResult ObtenerDocentesSinAulaAsignada(Guid idInstitucion)
         {
             try
             {
@@ -420,7 +420,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idInstitucion}")]
-        public IActionResult ObtenerDocentesDeInstitucion(int idInstitucion)
+        public IActionResult ObtenerDocentesDeInstitucion(Guid idInstitucion)
         {
             try
             {
@@ -447,7 +447,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                if (aulaAAgregar == null || aulaAAgregar.InstitucionId <= 0 || aulaAAgregar.DocenteId < 0)
+                if (aulaAAgregar == null || aulaAAgregar.InstitucionId == Guid.Empty || aulaAAgregar.DocenteId == Guid.Empty)
                 {
                     return BadRequest();
                 }
@@ -477,7 +477,7 @@ namespace SCCD.Controllers
                             return NotFound();
                         }
 
-                        if (aulaAAgregar.DocenteId == 0)
+                        if (aulaAAgregar.DocenteId == Guid.Empty)
                         {
                             nuevaAula.Docente = null;
                         }
@@ -531,7 +531,7 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idAula}")]
-        public IActionResult EditarAula(int idAula, [FromBody]AulaAAgregar aulaAEditar)
+        public IActionResult EditarAula(Guid idAula, [FromBody]AulaAAgregar aulaAEditar)
         {
             try
             {
@@ -544,7 +544,7 @@ namespace SCCD.Controllers
                         return BadRequest("Aula existente");
                     }
                     
-                    if(aulaAEditar.DocenteId > 0)
+                    if(aulaAEditar.DocenteId != Guid.Empty)
                     {   
                         var docente = _personaRepositorie.ObtenerAsync(aulaAEditar.DocenteId);
                         if (docente != null)
@@ -555,7 +555,7 @@ namespace SCCD.Controllers
                         {
                             return NotFound(false);
                         }
-                    }else if (aula.Docente != null && aulaAEditar.DocenteId == 0)
+                    }else if (aula.Docente != null && aulaAEditar.DocenteId == Guid.Empty)
                     {
                         aula.Docente = null;
                     }
@@ -579,7 +579,7 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idAlumno}")]
-        public IActionResult EliminarAlumnoDeAula(int idAlumno)
+        public IActionResult EliminarAlumnoDeAula(Guid idAlumno)
         {
             try
             {
@@ -593,11 +593,11 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idAula}")]
-        public IActionResult AgrgarAlumnoExistenteAAula(int idAula, [FromBody]AlumnosExistentesAAgregar alumnosAAgregar)
+        public IActionResult AgrgarAlumnoExistenteAAula(Guid idAula, [FromBody]AlumnosExistentesAAgregar alumnosAAgregar)
         {
             try
             {
-                if (idAula <= 0 || alumnosAAgregar.AlumnosSeleccionados.Count() == 0 || alumnosAAgregar == null)
+                if (idAula == Guid.Empty || alumnosAAgregar.AlumnosSeleccionados.Count() == 0 || alumnosAAgregar == null)
                 {
                     return BadRequest(false);
                 }
@@ -636,11 +636,11 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idAula}")]
-        public IActionResult AgrgarAlumnoNuevoAAula(int idAula, [FromBody]NuevoAlumno nuevoAlumnoAAgregar)
+        public IActionResult AgrgarAlumnoNuevoAAula(Guid idAula, [FromBody]NuevoAlumno nuevoAlumnoAAgregar)
         {
             try
             {
-                if (idAula <= 0 || nuevoAlumnoAAgregar == null)
+                if (idAula == Guid.Empty || nuevoAlumnoAAgregar == null)
                 {
                     return BadRequest(false);
                 }
@@ -711,11 +711,11 @@ namespace SCCD.Controllers
         //asistencia - Hijo/a ausente"
         [HttpPost]
         [Route("/[controller]/[action]/{idAula}")]
-        public IActionResult CargarNuevaAsistencia(int idAula, [FromBody] List<Alumno> alumnos)
+        public IActionResult CargarNuevaAsistencia(Guid idAula, [FromBody] List<Alumno> alumnos)
         {
             try
             {
-                if (alumnos == null || idAula == 0)
+                if (alumnos == null || idAula == Guid.Empty)
                 {
                     return BadRequest(false);
                 }
@@ -796,7 +796,7 @@ namespace SCCD.Controllers
         //Ademas, aquel alumno que esta ausente y no tiene ausencia cargada o si la tiene pero la misma NO esta justificada, luego de tomar asistencia, el sistema le genera una nueva
         //Ausencia con motivo "Toma de asistencia - Hijo/a ausente"
         [NonAction]
-        public void CalcularYActualizarPorcentajesDeAsistenciaAlumnos(int idAula)
+        public void CalcularYActualizarPorcentajesDeAsistenciaAlumnos(Guid idAula)
         {
             var aulaConAsistencias = _aulaRepositorie.ObtenerAulaConAsistencias(idAula);
             var alumnosAula = _aulaRepositorie.ObtenerAlumnosAula(idAula);
@@ -824,7 +824,7 @@ namespace SCCD.Controllers
 
         [HttpDelete]
         [Route("/[controller]/[action]/{idAula}")]
-        public IActionResult EliminarAula(int idAula)
+        public IActionResult EliminarAula(Guid idAula)
         {
             try
             {

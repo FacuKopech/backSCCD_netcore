@@ -43,7 +43,7 @@ namespace SCCD.Controllers
             try
             {
                 List<NotaConEnumerables> notasARetornar = new List<NotaConEnumerables>();
-                var id = Convert.ToInt32(_session.IdUserLogueado);
+                var id = Guid.Parse(_session.IdUserLogueado);
                 var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(id);
                 var notasRecibidas = _notaRepositorie.GetNotasRecibidasPersona(personaLogueada.Id);
                 if (notasRecibidas != null && notasRecibidas.Count() > 0)
@@ -80,7 +80,7 @@ namespace SCCD.Controllers
         [Route("/[controller]/[action]")]
         public IEnumerable<NotaConEnumerables> IndexNotasEmitidas() //Cambio ICollection a IEnumerable para el Front
         {            
-            var id = Convert.ToInt32(_session.IdUserLogueado);
+            var id = Guid.Parse(_session.IdUserLogueado);
             var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(id);
             var notasEmitidas = _notaRepositorie.GetNotasEmitidasPersona(personaLogueada.Id);
             ICollection<NotaConEnumerables> notasEmitidasConEnumerables = new List<NotaConEnumerables>();
@@ -112,7 +112,7 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{id}")]        
-        public bool LeerNota(int id)
+        public bool LeerNota(Guid id)
         {
             if (id == null || _notaRepositorie.ObtenerTodosAsync() == null)
             {
@@ -126,7 +126,7 @@ namespace SCCD.Controllers
             }
 
             string IdUserLogueado = _session.IdUserLogueado;
-            var idUser = Convert.ToInt32(IdUserLogueado);
+            var idUser = Guid.Parse(IdUserLogueado);
             var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(idUser);
 
             //subscribimos observers a observable           
@@ -143,11 +143,11 @@ namespace SCCD.Controllers
         }
         [HttpPut]
         [Route("/[controller]/[action]/{idNota}")]        
-        public IActionResult FirmarNota(int idNota)
+        public IActionResult FirmarNota(Guid idNota)
         {
             try
             {
-                if (idNota != null && idNota > 0)
+                if (idNota != null && idNota != Guid.Empty)
                 {
                     var nota = _notaRepositorie.ObtenerAsync(idNota);
                     if (nota != null)
@@ -179,7 +179,7 @@ namespace SCCD.Controllers
             try
             {
                 string IdUserLogueado = _session.IdUserLogueado;
-                var id = Convert.ToInt32(IdUserLogueado);
+                var id = Guid.Parse(IdUserLogueado);
                 var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(id);                
                 List<Aula> aulasAUsarNuevaNota = new List<Aula>();
                 if (personaLogueada.Usuario.Grupos != null && personaLogueada.Usuario.Grupos.Count() > 0)
@@ -282,13 +282,13 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idAula}/{enviaNotaComo}")]
-        public IEnumerable<Persona> ObtenerListaDeDestinatariosParaNuevaNota(int idAula, string enviaNotaComo)
+        public IEnumerable<Persona> ObtenerListaDeDestinatariosParaNuevaNota(Guid idAula, string enviaNotaComo)
         {
             try
             {
                 List<Persona> destinatarios = new List<Persona>();
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
-                if (personaLogueada != null && idAula > 0)
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                if (personaLogueada != null && idAula != Guid.Empty)
                 {
                     if (enviaNotaComo == "Padre")
                     {
@@ -422,7 +422,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 if (personaLogueada != null)
                 {
                     var hijosPadreLogueado = _personaRepositorie.ObtenerHijos(personaLogueada.Id);
@@ -448,7 +448,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idAula}")]
-        public IEnumerable<Alumno> ObtenerAlumnosDeAulaParaNuevaNota(int idAula)
+        public IEnumerable<Alumno> ObtenerAlumnosDeAulaParaNuevaNota(Guid idAula)
         {            
             var alumnos = _aulaRepositorie.ObtenerAlumnosAula(idAula);
             if (alumnos != null && alumnos.Count() > 0)
@@ -492,7 +492,7 @@ namespace SCCD.Controllers
             {
                 if (nuevaNota.Tipo != "" && nuevaNota.Titulo != "" && nuevaNota.Cuerpo != "")
                 {
-                    var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                    var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                     if (personaLogueada != null)
                     {
                         if (nuevaNota.EnviaNotaComo == "Padre")
@@ -523,8 +523,8 @@ namespace SCCD.Controllers
                                         notaAAgregar.AulasDestinadas = new List<Aula>();
                                         notaAAgregar.AulasDestinadas.Add(aulaDestinada);
                                         notaAAgregar.Destinatarios = new List<Persona> {
-                                        aulaDestinada.Docente
-                                    };
+                                            aulaDestinada.Docente
+                                        };
                                     }
                                     else
                                     {
@@ -915,7 +915,7 @@ namespace SCCD.Controllers
         
         [HttpPost]
         [Route("/[controller]/[action]/{idHijo}")]
-        public IActionResult EnviarNuevaNotaADocente(int idHijo, [FromBody] NotaADocente nuevaNotaADocente)
+        public IActionResult EnviarNuevaNotaADocente(Guid idHijo, [FromBody] NotaADocente nuevaNotaADocente)
         {
             try
             {
@@ -939,7 +939,7 @@ namespace SCCD.Controllers
                                 Leida = false,                                                                                                
                                 Destinatarios = destinatarios                                
                             };
-                            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                             if (personaLogueada != null)
                             {
                                 nuevaNota.Emisor = personaLogueada;
@@ -990,7 +990,7 @@ namespace SCCD.Controllers
 
         [HttpPost]
         [Route("/[controller]/[action]/{idAlumno}")]
-        public IActionResult EnviarNuevaNotaAPadres(int idAlumno, [FromBody] NotaADocente nuevaNotaAPadres)
+        public IActionResult EnviarNuevaNotaAPadres(Guid idAlumno, [FromBody] NotaADocente nuevaNotaAPadres)
         {
             try
             {
@@ -1011,7 +1011,7 @@ namespace SCCD.Controllers
                             Leida = false,
                             Destinatarios = destinatarios
                         };
-                        var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                        var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                         if (personaLogueada != null)
                         {
                             nuevaNota.Emisor = personaLogueada;
@@ -1096,7 +1096,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idNota}/")]
-        public IActionResult ActualizarNombreArchivosNota(int idNota)
+        public IActionResult ActualizarNombreArchivosNota(Guid idNota)
         {
             string uploadsFolder = Path.Combine(_webHost.WebRootPath, "NotasFiles");
             DirectoryInfo di = new DirectoryInfo(uploadsFolder);
@@ -1107,7 +1107,7 @@ namespace SCCD.Controllers
                 {                    
                     int indice = file.Name.IndexOf("Nota");
                     string substring = file.Name.Substring(indice);
-                    if (!Regex.IsMatch(substring, @"-\d+-"))
+                    if (!Regex.IsMatch(substring, @"-\b[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b-"))
                     {
                         string modifiedName = Regex.Replace(substring, @"-", $"-{idNota}-");
                         string updatedFileName = file.Name.Substring(0, indice) + modifiedName;
@@ -1128,7 +1128,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idNota}")]
-        public IActionResult ObtenerArchivosNota(int idNota)
+        public IActionResult ObtenerArchivosNota(Guid idNota)
         {
             string uploadsFolder = Path.Combine(_webHost.WebRootPath, "NotasFiles");
             DirectoryInfo di = new DirectoryInfo(uploadsFolder);
@@ -1142,19 +1142,22 @@ namespace SCCD.Controllers
                     string substring = file.Name.Substring(indice);
                     if (substring.Contains(idNota.ToString()))
                     {
-                        FileMetadata fileMetadata = new FileMetadata();
-                        fileMetadata.FileName = file.Name;
-                        fileMetadata.FileSize = file.Length;
-                        string fullPath = uploadsFolder + Path.DirectorySeparatorChar + file.Name;
-                        byte[] fileBytes = System.IO.File.ReadAllBytes(fullPath);
-                        fileMetadata.Data = fileBytes;
-                        fileMetadata.ContentType = GetContentType(file.FullName);
-                        filesToDownload.Add(fileMetadata);
-                        using (var stream = System.IO.File.OpenRead(file.FullName))
+                        FileMetadata fileMetadata = new FileMetadata
                         {
-                            FormFile fileToShow = new FormFile(stream, 0, stream.Length, null, Path.GetFileName(stream.Name));
+                            FileName = file.Name,
+                            FileSize = file.Length,
+                            ContentType = GetContentType(file.FullName)
+                        };
+
+                        using (var fileStream = System.IO.File.OpenRead(file.FullName))
+                        {
+                            fileMetadata.Data = new byte[fileStream.Length];
+                            fileStream.Read(fileMetadata.Data, 0, fileMetadata.Data.Length);
+
+                            FormFile fileToShow = new FormFile(fileStream, 0, fileStream.Length, null, Path.GetFileName(fileStream.Name));
                             filesToShow.Add(fileToShow);
                         }
+                        filesToDownload.Add(fileMetadata);
                     }
                 }
 
@@ -1207,7 +1210,7 @@ namespace SCCD.Controllers
         }
         [HttpGet]
         [Route("/[controller]/[action]")]
-        public async Task<IActionResult> VerArchivosNotas(int id)
+        public async Task<IActionResult> VerArchivosNotas(Guid id)
         {
             string uploadsFolder = Path.Combine(_webHost.WebRootPath, "NotasFiles");
             DirectoryInfo di = new DirectoryInfo(uploadsFolder);
@@ -1230,18 +1233,30 @@ namespace SCCD.Controllers
         }
 
         [NonAction]
-        public void EliminarArchivosNota(int id)
+        public void EliminarArchivosNota(Guid id)
         {
             string uploadsFolder = Path.Combine(_webHost.WebRootPath, "NotasFiles");
             DirectoryInfo di = new DirectoryInfo(uploadsFolder);
 
             foreach (var file in di.GetFiles())
             {
-                int indice = file.Name.IndexOf("Nota");
-                string substring = file.Name.Substring(indice);
-                if (substring.Contains(id.ToString()))
+                try
                 {
-                    file.Delete();
+                    int indice = file.Name.IndexOf("Nota");
+                    string substring = file.Name.Substring(indice);
+
+                    if (substring.Contains(id.ToString()))
+                    {
+                        file.Attributes = FileAttributes.Normal;
+                        using (var fileStream = file.Open(FileMode.Open, FileAccess.ReadWrite, FileShare.Delete))
+                        {
+                        }
+                        file.Delete();
+                    }
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine($"No fue posible eliminar el archivo {file.Name}: {ex.Message}");
                 }
             }
 
@@ -1249,7 +1264,7 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{id}")]
-        public IActionResult Edit(int id, [FromBody] NotaAModificar notaAModificar)
+        public IActionResult Edit(Guid id, [FromBody] NotaAModificar notaAModificar)
         {                      
             if (id != null)
             {
@@ -1281,7 +1296,7 @@ namespace SCCD.Controllers
                             foreach (var aulaEnNota in nota.AulasDestinadas)
                             {
                                 var notaEnListaDestinadas = notaAModificar.AulasDestinadas.Where(x => x == aulaEnNota.Id).FirstOrDefault();
-                                if (notaEnListaDestinadas == 0)
+                                if (notaEnListaDestinadas == Guid.Empty)
                                 {                                    
                                     nota.Destinatarios.Remove(aulaEnNota.Docente);
                                     nota.AulasDestinadas.Remove(aulaEnNota);
@@ -1311,7 +1326,7 @@ namespace SCCD.Controllers
        
         [HttpDelete]
         [Route("/[controller]/[action]/{id}")]        
-        public IActionResult DeleteConfirmed(int id)
+        public IActionResult DeleteConfirmed(Guid id)
         {            
             var nota = _notaRepositorie.ObtenerAsync(id);
             if (nota != null)

@@ -17,7 +17,7 @@ namespace SCCD.FacadePattern
             _personaRepositorie = personaaRepositorie;
             _aulaRepositorie = aulaRepositorie;
         }
-        public void EnviarMailHistorial(Historial Historial, int idAlumno, string accion)
+        public void EnviarMailHistorial(Historial Historial, Guid idAlumno, string accion)
         {
             SmtpClient smtpClient = new SmtpClient();
             smtpClient.Host = "smtp.gmail.com";

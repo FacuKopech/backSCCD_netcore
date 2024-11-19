@@ -29,7 +29,7 @@ namespace SCCD.Controllers
         }
         [HttpGet]
         [Route("/[controller]/[action]/{idHijo}")]
-        public IEnumerable<Historial> ObtenerHistorialesDeAlumno(int idHijo)
+        public IEnumerable<Historial> ObtenerHistorialesDeAlumno(Guid idHijo)
         {
             var alumno = _personaRepositorie.GetAlumno(idHijo);
             if (alumno != null && alumno.Historiales != null)
@@ -42,11 +42,11 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idHijo}/{idHistorial}")]
-        public IActionResult FirmarHistorial(int idHijo, int idHistorial)
+        public IActionResult FirmarHistorial(Guid idHijo, Guid idHistorial)
         {
             try
             {
-                if (idHijo != null && idHijo > 0 && idHistorial != null && idHistorial > 0)
+                if (idHijo != null && idHijo != Guid.Empty && idHistorial != null && idHistorial != Guid.Empty)
                 {
                     var historial = _historialRepositorie.ObtenerAsync(idHistorial);
                     if (historial != null)
@@ -75,12 +75,12 @@ namespace SCCD.Controllers
 
         [HttpPost]
         [Route("/[controller]/[action]/{idAlumno}")]
-        public IActionResult AgregarHistorial(int idAlumno, [FromBody] HistorialACrear historialAAgregar)
+        public IActionResult AgregarHistorial(Guid idAlumno, [FromBody] HistorialACrear historialAAgregar)
         {
             try
             {
                 Historial nuevoHistorial = new Historial();
-                if (historialAAgregar != null && idAlumno > 0)
+                if (historialAAgregar != null && idAlumno != Guid.Empty)
                 {
                     nuevoHistorial.Descripcion = historialAAgregar.Descripcion;
                     if (historialAAgregar.Calificacion == 0)
@@ -138,14 +138,14 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idAlumno}/{idHistorial}")]
-        public IActionResult EditHistorialAlumno(int idAlumno, int idHistorial, [FromBody] HistorialACrear historialAModificar)
+        public IActionResult EditHistorialAlumno(Guid idAlumno, Guid idHistorial, [FromBody] HistorialACrear historialAModificar)
         {
             try
             {
                 var alumno = _personaRepositorie.GetAlumno(idAlumno);
                 if (alumno != null && historialAModificar != null)
                 {
-                    var historial = alumno.Historiales.FirstOrDefault(x => x.IdHistorial == idHistorial);
+                    var historial = alumno.Historiales.FirstOrDefault(x => x.Id == idHistorial);
                     if (historial != null)
                     {
                         historial.Descripcion = historialAModificar.Descripcion;
@@ -202,22 +202,22 @@ namespace SCCD.Controllers
         }
         [HttpDelete]
         [Route("/[controller]/[action]/{idHistorial}/{idAlumno}")]
-        public IActionResult DeleteHistorial(int IdHistorial, int idAlumno)
+        public IActionResult DeleteHistorial(Guid IdHistorial, Guid idAlumno)
         {
             try
             {
-                if (idAlumno == null || idAlumno == 0 || IdHistorial == 0 || IdHistorial == null)
+                if (idAlumno == null || idAlumno == Guid.Empty || IdHistorial == Guid.Empty || IdHistorial == null)
                 {
                     return NotFound(false);
                 }
                 var alumno = _personaRepositorie.GetAlumno(idAlumno);
                 if (alumno != null)
                 {
-                    var historial = alumno.Historiales.FirstOrDefault(x => x.IdHistorial == IdHistorial);
+                    var historial = alumno.Historiales.FirstOrDefault(x => x.Id == IdHistorial);
                     if (historial != null)
                     {
                         _personaRepositorie.EliminarHistorial(alumno.Id, historial);
-                        _historialRepositorie.Borrar(historial.IdHistorial);
+                        _historialRepositorie.Borrar(historial.Id);
                         this.NuevaAuditHistorial(historial, "BAJA");
                         return Ok(true);
                     }
@@ -240,13 +240,13 @@ namespace SCCD.Controllers
         [NonAction]
         private IActionResult NuevaAuditHistorial(Historial historial, string accion)
         {
-            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
             if (personaLogueada != null)
             {
                 HistorialAudit nuevaAuditHistorial = new HistorialAudit
                 {
                     IdPersona = personaLogueada.Id,
-                    IdHistorial = historial.IdHistorial,
+                    IdHistorial = historial.Id,
                     Accion = accion,
                     Fecha = DateTime.Now
                 };

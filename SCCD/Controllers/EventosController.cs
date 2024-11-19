@@ -1,5 +1,4 @@
 ﻿using Data.Contracts;
-using Data.Migrations;
 using Dtos;
 using Dtos.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -34,7 +33,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 if (personaLogueada != null)
                 {
                     List<EventoConEnumerables> eventosARetornar = new List<EventoConEnumerables>();
@@ -134,8 +133,8 @@ namespace SCCD.Controllers
                     && nuevoEvento.Descripcion != "" 
                     && nuevoEvento.Localidad != "" 
                     && nuevoEvento.Motivo != ""
-                    && nuevoEvento.IdAulaDestinada > 0
-                    && nuevoEvento.IdCreador > 0)
+                    && nuevoEvento.IdAulaDestinada != Guid.Empty
+                    && nuevoEvento.IdCreador != Guid.Empty)
                 {
                     Aula aulaDestinada = _aulaRepositorie.ObtenerAsync(nuevoEvento.IdAulaDestinada);
                     Persona creadorDeEvento = _personaRepositorie.ObtenerAsync(nuevoEvento.IdCreador);
@@ -192,7 +191,7 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{id}")]
-        public IActionResult ModificarEvento(int id, [FromBody] EventoAModificar eventoAModificar)
+        public IActionResult ModificarEvento(Guid id, [FromBody] EventoAModificar eventoAModificar)
         {
             try
             {
@@ -245,7 +244,7 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idEvento}/{confirmacion}")]
-        public IActionResult ConfirmarAsistenciaEvento(int idEvento, string confirmacion, [FromBody] object body)
+        public IActionResult ConfirmarAsistenciaEvento(Guid idEvento, string confirmacion, [FromBody] object body)
         {
             try
             {
@@ -254,7 +253,7 @@ namespace SCCD.Controllers
                     Evento evento = _eventoRepositorie.ObtenerAsync(idEvento);
                     if (evento != null)
                     {
-                        Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                        Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                         if (personaLogueada != null)
                         {
                             if (confirmacion == "Asiste")
@@ -319,7 +318,7 @@ namespace SCCD.Controllers
 
         [HttpDelete]
         [Route("/[controller]/[action]/{idEvento}")]
-        public IActionResult EliminarEvento(int idEvento)
+        public IActionResult EliminarEvento(Guid idEvento)
         {
             try
             {

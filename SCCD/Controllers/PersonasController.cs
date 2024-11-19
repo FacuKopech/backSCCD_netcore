@@ -3,6 +3,7 @@ using Data.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Model.Entities;
 using Dtos;
+using SCCD.Services.Interfaces;
 
 namespace SCCD.Controllers
 {
@@ -14,11 +15,13 @@ namespace SCCD.Controllers
         private IInstitucionRepositorie _institucionRepositorie;
         private IAulaRepositorie _aulaRepositorie;
         private IGrupoRepositorie _gruposRepositorie;
+        private IArchivosService _archivosService;
         private readonly IMapper _mapper;
         private Session _session = Session.GetInstance();
 
         public PersonasController(IPersonaRepositorie personasRepositorie, IUsuarioRepositorie usuarioRepositorie,
-            IInstitucionRepositorie institucionRepositorie,IAulaRepositorie aulaRepositorie, IGrupoRepositorie gruposRepositorie, IMapper mapper)
+            IInstitucionRepositorie institucionRepositorie,IAulaRepositorie aulaRepositorie, 
+            IGrupoRepositorie gruposRepositorie, IMapper mapper, IArchivosService archivosService)
         {
 
             _personaRepositorie = personasRepositorie;
@@ -27,6 +30,7 @@ namespace SCCD.Controllers
             _aulaRepositorie = aulaRepositorie;
             _gruposRepositorie = gruposRepositorie;
             _mapper = mapper;
+            _archivosService = archivosService;
         }
         
         [HttpGet]
@@ -35,7 +39,7 @@ namespace SCCD.Controllers
         {
             List<Alumno> hijosPadre = new List<Alumno>();
             string IdUserLogueado = _session.IdUserLogueado;
-            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(IdUserLogueado));
+            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(IdUserLogueado));
             if (personaLogueada!= null)
             {
                 foreach (var hijo in _personaRepositorie.ObtenerHijos(personaLogueada.Id))
@@ -50,7 +54,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idAlumno}")]
-        public IEnumerable<Persona> ObtenerPadresDeAlumno(int idAlumno)
+        public IEnumerable<Persona> ObtenerPadresDeAlumno(Guid idAlumno)
         {
             try
             {
@@ -72,8 +76,8 @@ namespace SCCD.Controllers
         }
 
         [HttpGet]
-        [Route("/[controller]/[action]/{IdPersona}")]
-        public IActionResult ObtenerAlumnosSinPadreAsignado(int IdPersona)
+        [Route("/[controller]/[action]")]
+        public IActionResult ObtenerAlumnosSinPadreAsignado()
         {
             try
             {
@@ -133,7 +137,7 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{IdPersona}")]
-        public IActionResult ObtenerHijosDePersona(int IdPersona)
+        public IActionResult ObtenerHijosDePersona(Guid IdPersona)
         {
             try
             {                
@@ -398,11 +402,11 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idPersona}")]
-        public IActionResult EditarPersona(int IdPersona, [FromBody] PersonaModificar personaModificar)
+        public IActionResult EditarPersona(Guid IdPersona, [FromBody] PersonaModificar personaModificar)
         {
             try
             {
-                if (IdPersona != null && IdPersona > 0)
+                if (IdPersona != null && IdPersona != Guid.Empty)
                 {
                     var personas = _personaRepositorie.ObtenerTodosAsync();
                     if (personas != null)
@@ -419,6 +423,7 @@ namespace SCCD.Controllers
                     var persona = _personaRepositorie.ObtenerAsync(IdPersona);
                     if (persona != null)
                     {
+                        var hijos = _personaRepositorie.ObtenerHijos(persona.Id);
                         persona.Nombre = personaModificar.Nombre;
                         persona.Apellido = personaModificar.Apellido;
                         persona.DNI = Convert.ToInt32(personaModificar.DNI);
@@ -462,47 +467,56 @@ namespace SCCD.Controllers
                         }
                         if (personaModificar.HijosSeleccionados.Count() > 0)
                         {
-                            List<Alumno> hijosSeleccionados = new List<Alumno>();
-                            foreach (var hijoSeleccionado in personaModificar.HijosSeleccionados)
+                            if (hijos != null && hijos.Count() > 0)
                             {
+                                foreach (var hijo in hijos)
+                                {
+                                    if (!personaModificar.HijosSeleccionados.Any(x => x == hijo.Id))
+                                    {
+                                        this.EliminarAusenciasAlumno(hijo.Id);
+                                        this.ResetearFirmaHistorialesAlumno(hijo.Id);
+                                        _personaRepositorie.ModificarHijosAsignados(persona, hijo.Id.ToString(), "Desasignar");
+                                    }
+                                }
+                            }
+                                
+                            foreach (var hijoSeleccionado in personaModificar.HijosSeleccionados)
+                            {                                
                                 var alumno = _personaRepositorie.GetAlumno(hijoSeleccionado);
                                 if (alumno != null)
                                 {
-                                    if (!hijosSeleccionados.Any(x => x.Id == alumno.Id))
-                                    {
-                                        hijosSeleccionados.Add(alumno);
-                                    }                                                                      
+                                    _personaRepositorie.ModificarHijosAsignados(persona, alumno.Id.ToString(), "Asignar");
                                 }
                                 else
                                 {
                                     return NotFound(false);
                                 }
+                            }                           
+                        }else if (personaModificar.HijosSeleccionados.Count() == 0)
+                        {
+                            if (hijos != null && hijos.Count() > 0)
+                            {
+                                foreach (var hijo in hijos)
+                                {
+                                    this.EliminarAusenciasAlumno(hijo.Id);
+                                    this.ResetearFirmaHistorialesAlumno(hijo.Id);
+                                }
                             }
 
                             if (persona is Padre)
                             {
-                                ((Padre)persona).Hijos = hijosSeleccionados;
-                            }else if (persona is Docente)
-                            {
-                                ((Docente)persona).Hijos = hijosSeleccionados;
-                            }
-                            else if (persona is Directivo)
-                            {
-                                ((Directivo)persona).Hijos = hijosSeleccionados;
-                            }
-                        }else if (personaModificar.HijosSeleccionados.Count() == 0)
-                        {
-                            if (persona is Padre)
-                            {
                                 ((Padre)persona).Hijos = new List<Alumno>();
+                                _personaRepositorie.ModificarHijosAsignados(persona, "00000000-0000-0000-0000-000000000000", "");
                             }
                             else if (persona is Docente)
                             {
                                 ((Docente)persona).Hijos = new List<Alumno>();
+                                _personaRepositorie.ModificarHijosAsignados(persona, "00000000-0000-0000-0000-000000000000", "");
                             }
                             else if (persona is Directivo)
                             {
-                                ((Directivo)persona).Hijos = new List<Alumno>();   
+                                ((Directivo)persona).Hijos = new List<Alumno>();
+                                _personaRepositorie.ModificarHijosAsignados(persona, "00000000-0000-0000-0000-000000000000", "");
                             }
                         }
                         _personaRepositorie.Modificar(persona);
@@ -524,13 +538,33 @@ namespace SCCD.Controllers
             }
         }
 
+        [NonAction]
+        private Task<bool> EliminarAusenciasAlumno(Guid idHijo)
+        {
+            var ausenciasHijo = _personaRepositorie.ObtenerAusenciasAlumno(idHijo);
+            if (ausenciasHijo != null && ausenciasHijo.Count() > 0)
+            {
+                foreach (var ausencia in ausenciasHijo)
+                {
+                    _archivosService.EliminarArchivosAusencia(ausencia.Id);
+                }
+            }
+           return _personaRepositorie.EliminarAusenciasAlumno(idHijo);
+        }
+
+        [NonAction]
+        private Task<bool> ResetearFirmaHistorialesAlumno(Guid idHijo)
+        {
+            return _personaRepositorie.ResetearFirmasHistorialesAlumno(idHijo);   
+        }
+
         [HttpPut]
         [Route("/[controller]/[action]/{idAlumno}")]
-        public IActionResult EditarAlumno(int idAlumno, [FromBody] NuevoAlumno alumnoAEditar)
+        public IActionResult EditarAlumno(Guid idAlumno, [FromBody] NuevoAlumno alumnoAEditar)
         {
             try
             {
-                if (idAlumno == 0 || alumnoAEditar == null)
+                if (idAlumno == Guid.Empty || alumnoAEditar == null)
                 {
                     return BadRequest(false);
                 }
@@ -561,11 +595,11 @@ namespace SCCD.Controllers
 
         [HttpDelete]
         [Route("/[controller]/[action]/{idAlumno}")]
-        public IActionResult EliminarAlumno(int idAlumno)
+        public IActionResult EliminarAlumno(Guid idAlumno)
         {
             try
             {
-                if (idAlumno == 0)
+                if (idAlumno == Guid.Empty)
                 {
                     return BadRequest(false);
                 }
@@ -583,11 +617,11 @@ namespace SCCD.Controllers
 
         [HttpDelete]
         [Route("/[controller]/[action]/{idPersona}")]
-        public IActionResult EliminarPersona(int IdPersona)
+        public IActionResult EliminarPersona(Guid IdPersona)
         {
             try
             {
-                if (IdPersona != null && IdPersona > 0)
+                if (IdPersona != null && IdPersona != Guid.Empty)
                 {
                     _personaRepositorie.Borrar(IdPersona);
                     return Ok(true);

@@ -40,6 +40,18 @@ namespace SCCD.FacadePattern
             MailMessage mailMessage = new MailMessage();
             if (accion == "nueva" || accion == "modificada")
             {
+                if (ausencia.Motivo == "Toma de asistencia - Hijo/a ausente")
+                {
+                    var padresDeAlumno = _personaRepositorie.ObtenerPadresDeAlumno(alumno.Id);
+                    if (padresDeAlumno.Count() > 0)
+                    {
+                        foreach (var padre in padresDeAlumno)
+                        {
+                            mailMessage.Bcc.Add(padre.Email);
+                        }
+                    }
+                }
+                
                 var aulaDeAlumno = _aulaRepositorie.ObtenerAulaDeAlumno(alumno.Id);
                 if (aulaDeAlumno != null)
                 {
@@ -55,7 +67,7 @@ namespace SCCD.FacadePattern
                         mailMessage.Bcc.Add(directivoDeInstitucion.Email);
                     }
                 }
-
+                
             }
             else
             {

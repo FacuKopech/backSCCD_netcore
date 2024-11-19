@@ -288,7 +288,7 @@ namespace SCCD.FacadePattern
 
             MailMessage mailMessage = new MailMessage();
             MailAddress mail = new MailAddress("noreply.sccd@gmail.com");
-            Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+            Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
 
             mailMessage.Bcc.Add(evento.Creador.Email);
 

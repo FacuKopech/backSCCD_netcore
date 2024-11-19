@@ -97,12 +97,12 @@ namespace SCCD.Controllers
         {
             try
             {                
-                var persona = _personasRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                var persona = _personasRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 if (!(persona is Admin))
                 {
                     LoginAudit nuevoLogueo = new LoginAudit
                     {
-                        UsuarioLogueado = _usuariosRepositorie.ObtenerAsync(Convert.ToInt32(_session.IdUserLogueado)),
+                        UsuarioLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado)),
                         FechaYHoraLogin = DateTime.Now
                     };
 
@@ -125,7 +125,7 @@ namespace SCCD.Controllers
             {
                 if (_session.IdUserLogueado != "" && _session.IdUserLogueado != null)
                 {
-                    var audits = _loginAuditRepositorie.ObtenerLoginsDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                    var audits = _loginAuditRepositorie.ObtenerLoginsDeUsuario(Guid.Parse(_session.IdUserLogueado));
                     var ultimoAudit = audits.Last();
                     ultimoAudit.FechaYHoraLogout = DateTime.Now;
 
@@ -151,7 +151,7 @@ namespace SCCD.Controllers
             }
             else
             {
-                var user = _usuariosRepositorie.ObtenerAsync(Convert.ToInt32(_session.IdUserLogueado));
+                var user = _usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado));
                 if (user != null)
                 {
                     return _personasRepositorie.ObtenerPersonaDeUsuario(user.Id);
@@ -189,7 +189,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                var persona = _personasRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_usuariosRepositorie.ObtenerAsync(Convert.ToInt32(_session.IdUserLogueado)).Id));
+                var persona = _personasRepositorie.ObtenerPersonaDeUsuario((_usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado)).Id));
 
                 if (persona != null)
                 {
@@ -274,11 +274,11 @@ namespace SCCD.Controllers
 
         [HttpGet]
         [Route("/[controller]/[action]/{idUser}")]
-        public IActionResult ObtenerRolesUsuario(int idUser)
+        public IActionResult ObtenerRolesUsuario(Guid idUser)
         {
             try
             {
-                if (idUser == 0 || idUser == null)
+                if (idUser == Guid.Empty || idUser == null)
                 {
                     return BadRequest(false);
                 }
@@ -375,11 +375,11 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{idUser}")]        
-        public IActionResult EditarUsuario(int idUser, [FromBody] UsuarioACrear usuarioAModificar)
+        public IActionResult EditarUsuario(Guid idUser, [FromBody] UsuarioACrear usuarioAModificar)
         {
             try
             {
-                if (idUser == 0 || idUser == null || usuarioAModificar == null)
+                if (idUser == Guid.Empty || idUser == null || usuarioAModificar == null)
                 {
                     return BadRequest(false);
                 }
@@ -508,7 +508,7 @@ namespace SCCD.Controllers
             {
                 if (ClaveAdmin != null && ClaveAdmin != "")
                 {
-                    var userLogueado = _usuariosRepositorie.ObtenerAsync(Convert.ToInt32(_session.IdUserLogueado));
+                    var userLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado));
                     if (userLogueado != null)
                     {
                         if (userLogueado.Clave == ClaveAdmin)
@@ -608,7 +608,7 @@ namespace SCCD.Controllers
             {
                 if (clave != null)
                 {
-                    var userLogueado = _usuariosRepositorie.ObtenerAsync(Convert.ToInt32(_session.IdUserLogueado));
+                    var userLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado));
                     if (userLogueado != null)
                     {
                         if (userLogueado.Clave != clave.ClaveActual)
@@ -804,11 +804,11 @@ namespace SCCD.Controllers
 
         [HttpDelete]
         [Route("/[controller]/[action]/{idUser}")]        
-        public IActionResult EliminarUsuario(int idUser)
+        public IActionResult EliminarUsuario(Guid idUser)
         {
             try
             {
-                if (idUser == 0 || idUser == null)
+                if (idUser == Guid.Empty || idUser == null)
                 {
                     return BadRequest(false);
                 }

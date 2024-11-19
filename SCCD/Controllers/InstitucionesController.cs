@@ -77,11 +77,11 @@ namespace SCCD.Controllers
 
         [HttpPut]
         [Route("/[controller]/[action]/{IdInstitucion}")]
-        public IActionResult EditarInstitucion(int IdInstitucion, [FromBody] Institucion institucionModificar)
+        public IActionResult EditarInstitucion(Guid IdInstitucion, [FromBody] Institucion institucionModificar)
         {
             try
             {
-                if (IdInstitucion != null && IdInstitucion > 0 && institucionModificar != null)
+                if (IdInstitucion != null && IdInstitucion != Guid.Empty && institucionModificar != null)
                 {
                     var instituciones = _institucionRepositorie.ObtenerTodosAsync();
                     var institucion = _institucionRepositorie.ObtenerAsync(IdInstitucion);
@@ -129,11 +129,11 @@ namespace SCCD.Controllers
 
         [HttpDelete]
         [Route("/[controller]/[action]/{idInstitucion}")]
-        public IActionResult EliminarInstitucion(int IdInstitucion)
+        public IActionResult EliminarInstitucion(Guid IdInstitucion)
         {
             try
             {
-                if (IdInstitucion != null && IdInstitucion > 0)
+                if (IdInstitucion != null && IdInstitucion != Guid.Empty)
                 {
                     _institucionRepositorie.Borrar(IdInstitucion);
                 }

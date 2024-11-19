@@ -5,6 +5,6 @@ namespace SCCD.Command.Ausencia
 {
     public interface IAusenciaCommand
     {
-        bool AgregarAusencia(int idHijo, [FromBody] AusenciaModificar nuevaAusencia);
+        bool AgregarAusencia(Guid idHijo, [FromBody] AusenciaModificar nuevaAusencia);
     }
 }

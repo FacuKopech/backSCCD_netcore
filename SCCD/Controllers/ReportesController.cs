@@ -152,7 +152,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 if (personaLogueada != null && personaLogueada.Institucion != null)
                 {                    
                     List<AulasAvg> asistenciasPorAulaAvgs = new List<AulasAvg>();
@@ -194,7 +194,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 if (personaLogueada != null && personaLogueada.Institucion != null)
                 {
                     List<AulasAvg> condicionesPorAulaAvgs = new List<AulasAvg>();
@@ -300,7 +300,7 @@ namespace SCCD.Controllers
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Convert.ToInt32(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                 if (personaLogueada != null)
                 {
                     var personasInstitucion = _personaRepositorie.ObtenerPadresDocentesDirectivosInstitucion(personaLogueada.Institucion.Id);

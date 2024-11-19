@@ -49,7 +49,7 @@ namespace SCCD.FacadePattern
             ausenciaMailSubSystem.EnviarMailAusencia(ausencia, alumno, accion);
         }
 
-        public void EnviarMailHistorial(Historial historial, int idHijo, string accion)
+        public void EnviarMailHistorial(Historial historial, Guid idHijo, string accion)
         {
             historialMailSubSystem.EnviarMailHistorial(historial, idHijo, accion);
         }
