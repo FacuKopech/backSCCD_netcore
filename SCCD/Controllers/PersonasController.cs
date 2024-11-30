@@ -211,22 +211,6 @@ namespace SCCD.Controllers
                             return BadRequest("Ya existe una Persona con ese DNI registrado");
                         }
                     }
-                    
-                    if (personaAAgregar.Usuario != null && personaAAgregar.TipoPersona != "")
-                    {
-                        var user = _userRepositorie.ObtenerAsync(personaAAgregar.Usuario.Id);
-                        if (user != null)
-                        {
-                            if (!this.AdministrarGruposUsuario(personaAAgregar.TipoPersona, user))
-                            {
-                                return BadRequest(false);
-                            }
-                        }
-                        else
-                        {
-                            return NotFound(false);
-                        }
-                    }
                    
                     if (personaAAgregar.TipoPersona == "Padre")
                     {                        
