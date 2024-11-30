@@ -1,0 +1,29 @@
+// Control Flow Graph for CalcularYActualizarPorcentajesDeAsistenciaAlumnos Function
+digraph {
+	rankdir=TB
+	Start [label=Start color=lightblue shape=circle style=filled]
+	"Get Aula" [label="Get aula and alumnos data" color=lightblue shape=ellipse style=filled]
+	"Calculate Total" [label="Calculate total asistencia in aula" color=lightblue shape=ellipse style=filled]
+	"For Each Alumno" [label="Loop: For each alumno" color=lightblue shape=diamond style=filled]
+	"Calculate Presente" [label="Calculate cantidadPresente" color=lightblue shape=ellipse style=filled]
+	"Assign Asistencia" [label="Assign asistencia percentage" color=lightblue shape=ellipse style=filled]
+	"For Each Ausente" [label="Loop: For each asistenciaAusente" color=lightblue shape=diamond style=filled]
+	"Get Asistencia" [label="Get asistenciaTomada" color=lightblue shape=ellipse style=filled]
+	"Check Justificada" [label="If ausenciaParaEsaFecha is not null and justificada == 'Si'" color=lightblue shape=diamond style=filled]
+	"Update Asistencia" [label="Update asistencia with justified absence" color=lightblue shape=ellipse style=filled]
+	"Save Changes" [label="Update alumno asistencia in repository" color=lightblue shape=ellipse style=filled]
+	End [label=End color=lightblue shape=circle style=filled]
+	Start -> "Get Aula"
+	"Get Aula" -> "Calculate Total"
+	"Calculate Total" -> "For Each Alumno"
+	"For Each Alumno" -> "Calculate Presente" [label=True]
+	"Calculate Presente" -> "Assign Asistencia"
+	"Assign Asistencia" -> "For Each Ausente"
+	"For Each Ausente" -> "Get Asistencia" [label=True]
+	"Get Asistencia" -> "Check Justificada"
+	"Check Justificada" -> "Update Asistencia" [label=True]
+	"Update Asistencia" -> "For Each Ausente"
+	"For Each Ausente" -> "For Each Alumno" [label=False]
+	"For Each Alumno" -> "Save Changes" [label=False]
+	"Save Changes" -> End
+}
