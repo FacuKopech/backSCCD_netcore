@@ -135,7 +135,7 @@ namespace SCCD.FacadePattern
             }
             else
             {
-                mailMessage.Subject = notaAEnviar.Titulo + " - NOTA MODIFICADA";
+                mailMessage.Subject = notaAEnviar.Titulo + " - Nota Modificada";
             }
             string uploadsFolder = Path.Combine(_webHost.WebRootPath, "NotasFiles");
             DirectoryInfo di = new DirectoryInfo(uploadsFolder);
@@ -259,7 +259,7 @@ namespace SCCD.FacadePattern
             mailMessage.AlternateViews.Add(view);
             
             mailMessage.BodyEncoding = System.Text.Encoding.UTF8;
-            mailMessage.Subject = $"[NOTA FIRMADA] - {titulo}";
+            mailMessage.Subject = $"Nota Firmada - {titulo}";
             mailMessage.SubjectEncoding = System.Text.Encoding.UTF8;
 
             smtpClient.Send(mailMessage);
