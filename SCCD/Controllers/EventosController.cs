@@ -34,18 +34,42 @@ namespace SCCD.Controllers
             try
             {
                 Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
-                if (personaLogueada != null)
+                if (personaLogueada != null && personaLogueada.Usuario != null && personaLogueada.Usuario.Grupos != null)
                 {
+                    var tieneRolPadre = personaLogueada.Usuario.Grupos.Any(g => g.Tipo == "Padre");
                     List<EventoConEnumerables> eventosARetornar = new List<EventoConEnumerables>();
                     List<Evento> eventos = new List<Evento>();
                     if (personaLogueada is Directivo)
                     {
                         eventos.AddRange(_eventoRepositorie.ObtenerEventosDeInstitucion(personaLogueada.Institucion.Id));
-
+                        if (tieneRolPadre)
+                        {
+                            var hijosDirectivo = _personaRepositorie.ObtenerHijos(personaLogueada.Id);
+                            foreach (var hijo in hijosDirectivo)
+                            {
+                                var aulaDeHijo = _aulaRepositorie.ObtenerAulaDeHijo(hijo.Id);
+                                if (aulaDeHijo != null)
+                                {
+                                    eventos.AddRange(_eventoRepositorie.ObtenerEventosParaPadre(aulaDeHijo.Id));
+                                }
+                            }
+                        }
                     }
                     else if (personaLogueada is Docente)
                     {
                         eventos.AddRange(_eventoRepositorie.ObtenerEventosConAulaDeDocente(personaLogueada.Id));
+                        if (tieneRolPadre)
+                        {
+                            var hijosDocente = _personaRepositorie.ObtenerHijos(personaLogueada.Id);
+                            foreach (var hijo in hijosDocente)
+                            {
+                                var aulaDeHijo = _aulaRepositorie.ObtenerAulaDeHijo(hijo.Id);
+                                if (aulaDeHijo != null)
+                                {
+                                    eventos.AddRange(_eventoRepositorie.ObtenerEventosParaPadre(aulaDeHijo.Id));
+                                }
+                            }
+                        }
                     }
                     else if (personaLogueada is Padre)
                     {
@@ -112,7 +136,7 @@ namespace SCCD.Controllers
                 }
                 else
                 {
-                    return NotFound("Persona no encontrada");
+                    return NotFound("Persona, Usuario o Grupos de Usuario no encontrados");
                 }
             }
             catch (Exception ex)
