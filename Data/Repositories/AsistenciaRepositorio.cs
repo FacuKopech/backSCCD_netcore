@@ -63,7 +63,13 @@ namespace Data.Repositories
 
         public Asistencia ObtenerUltimaAsistenciaAgregada()
         {
-            return _context.AsistenciasTomadas.OrderByDescending(x => x.Id).Include(asistenciaAlumno => asistenciaAlumno.AsistenciaAlumno).FirstOrDefault();
+            var today = DateTime.Today; 
+            return _context.AsistenciasTomadas
+                .Where(x => x.FechaAsistenciaTomada.Date == today)
+                .Include(asistenciaAlumno => asistenciaAlumno.AsistenciaAlumno)
+                .OrderByDescending(x => x.FechaAsistenciaTomada)
+                .FirstOrDefault();
         }
+
     }
 }
