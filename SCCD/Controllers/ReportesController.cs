@@ -331,22 +331,22 @@ namespace SCCD.Controllers
                         foreach (var persona in personasInstitucion)
                         {
                             var notasEmitidasPorPersona = _notasRepositorie.GetNotasEmitidasPersona(persona.Id);
-                            var notasRecibidasPorPersona = _notasRepositorie.GetNotasRecibidasPersona(persona.Id);
+                            var notasRecibidasPorPersona = _notasRepositorie.GetNotasRecibidasYFirmadas(persona.Id);
 
                             if (persona is Directivo)
                             {
                                 directivoCounter += 1;
-                                sumatoriaNotasRecibidasDirectivo += notasRecibidasPorPersona.Count();
+                                sumatoriaNotasRecibidasDirectivo += notasRecibidasPorPersona.NotasRecibidas.Count();
                                 sumatoriaNotasEmitidasDirectivo += notasEmitidasPorPersona.Count();
                             }else if (persona is Docente)
                             {
                                 docenteCounter += 1;
-                                sumatoriaNotasRecibidasDocente += notasRecibidasPorPersona.Count();
+                                sumatoriaNotasRecibidasDocente += notasRecibidasPorPersona.NotasRecibidas.Count();
                                 sumatoriaNotasEmitidasDocente += notasEmitidasPorPersona.Count();
                             }else if (persona is Padre)
                             {
                                 padreCounter += 1;
-                                sumatoriaNotasRecibidasPadre += notasRecibidasPorPersona.Count();
+                                sumatoriaNotasRecibidasPadre += notasRecibidasPorPersona.NotasRecibidas.Count();
                                 sumatoriaNotasEmitidasPadre += notasEmitidasPorPersona.Count();
                             }
                         }

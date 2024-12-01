@@ -21,5 +21,6 @@ namespace Data.Contracts
 
         IEnumerable<Evento> ObtenerEventosParaPadre(Guid idAula);
 
+        void ModificarEventoPorConfirmacion(EventoPersona eventoPersona);
     }
 }

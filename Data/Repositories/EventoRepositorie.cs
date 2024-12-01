@@ -1,5 +1,6 @@
 ﻿using Data.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Model.Entities;
 using System;
 using System.Collections.Generic;
@@ -37,9 +38,7 @@ namespace Data.Repositories
         public void Modificar(Evento entity)
         {
             var evento = _context.Eventos.Where(x => x.Id == entity.Id)
-                .Include(evento => evento.Asistiran)
-                .Include(evento => evento.NoAsistiran)
-                .Include(evento => evento.TalVezAsistan)
+                .Include(evento => evento.EventoPersonas)
                 .Include(aula => aula.AulaDestinada)
                 .Include(creador => creador.Creador)
                 .FirstOrDefault();
@@ -47,16 +46,22 @@ namespace Data.Repositories
             {
                 _context.Entry(evento).State = EntityState.Modified;
                 _context.SaveChanges();
+            }
+        }
 
+        public void ModificarEventoPorConfirmacion(EventoPersona eventoPersona)
+        {
+            if (eventoPersona != null)
+            {
+                _context.EventoPersona.Add(eventoPersona);
+                _context.SaveChanges();
             }
         }
 
         public Evento ObtenerAsync(Guid id)
         {
             var evento = _context.Eventos.Where(evento => evento.Id == id)
-                .Include(evento => evento.Asistiran)
-                .Include(evento => evento.NoAsistiran)
-                .Include(evento => evento.TalVezAsistan)
+                .Include(evento => evento.EventoPersonas)
                 .Include(aula => aula.AulaDestinada)
                 .Include(creador => creador.Creador).FirstOrDefault();
 
@@ -71,9 +76,7 @@ namespace Data.Repositories
         {
             return _context.Eventos
                 .Include(creador => creador.Creador)
-                .Include(evento => evento.Asistiran)
-                .Include(evento => evento.NoAsistiran)
-                .Include(evento => evento.TalVezAsistan)
+                .Include(evento => evento.EventoPersonas)
                 .Include(aula => aula.AulaDestinada).ThenInclude(docente => docente.Docente)
                 .Where(x => x.AulaDestinada.Docente.Id == idDocente).ToList();
         }
@@ -81,9 +84,7 @@ namespace Data.Repositories
         public IEnumerable<Evento> ObtenerEventosDeInstitucion(Guid idInstitucion)
         {
             return _context.Eventos
-                .Include(evento => evento.Asistiran)
-                .Include(evento => evento.NoAsistiran)
-                .Include(evento => evento.TalVezAsistan)
+                .Include(evento => evento.EventoPersonas)
                 .Include(creador => creador.Creador)
                 .Include(aula => aula.AulaDestinada)
                 .ThenInclude(institucion => institucion.Institucion)
@@ -94,58 +95,38 @@ namespace Data.Repositories
         {
             return _context.Eventos
              .Include(creador => creador.Creador)
-             .Include(evento => evento.Asistiran)
-             .Include(evento => evento.NoAsistiran)
-             .Include(evento => evento.TalVezAsistan)
+             .Include(evento => evento.EventoPersonas)
              .Include(aula => aula.AulaDestinada)
              .Where(x => x.AulaDestinada.Id == idAula).ToList();
         }
 
         public IEnumerable<Persona> ObtenerPersonasQueAsistiranAlEvento(Guid idEvento)
         {
-            var personas = _context.Personas
-                .Include(persona => persona.EventosAsistire)
+            var personasQueAsistiran = _context.EventoPersona
+                .Where(ep => ep.EventoId == idEvento && ep.Asistira == true)
+                .Select(ep => ep.Persona)
                 .ToList();
-            List<Persona> personasQueAsistiran = new List<Persona>();
-            foreach (var persona in personas)
-            {
-                if (persona.EventosAsistire.FirstOrDefault(evento => evento.Id == idEvento) != null)
-                {
-                    personasQueAsistiran.Add(persona);
-                }
-            }
+
             return personasQueAsistiran;
         }
 
         public IEnumerable<Persona> ObtenerPersonasQueNoAsistiranAlEvento(Guid idEvento)
         {
-            var personas = _context.Personas
-                .Include(persona => persona.EventosNoAsistire)
-                .ToList();
-            List<Persona> personasQueNoAsistiran = new List<Persona>();
-            foreach (var persona in personas)
-            {
-                if (persona.EventosNoAsistire.FirstOrDefault(evento => evento.Id == idEvento) != null)
-                {
-                    personasQueNoAsistiran.Add(persona);
-                }
-            }
+            var personasQueNoAsistiran = _context.EventoPersona
+               .Where(ep => ep.EventoId == idEvento && ep.NoAsistira == true)
+               .Select(ep => ep.Persona)
+               .ToList();
+
             return personasQueNoAsistiran;
         }
 
         public IEnumerable<Persona> ObtenerPersonasQueTalVezAsistanAlEvento(Guid idEvento)
         {
-            var personas = _context.Personas
-                .Include(persona => persona.EventosTalVezAsista)
-                .ToList();
-            List<Persona> personasQueTalVezAsistan = new List<Persona>();
-            foreach (var persona in personas)
-            {
-                if (persona.EventosTalVezAsista.FirstOrDefault(evento => evento.Id == idEvento) != null)
-                {
-                    personasQueTalVezAsistan.Add(persona);
-                }
-            }
+            var personasQueTalVezAsistan = _context.EventoPersona
+               .Where(ep => ep.EventoId == idEvento && ep.TalVezAsista == true)
+               .Select(ep => ep.Persona)
+               .ToList();
+
             return personasQueTalVezAsistan;
         }
 

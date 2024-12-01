@@ -64,9 +64,7 @@ namespace SCCD.Controllers
                             Domicilio = persona.Domicilio,
                             Usuario = persona.Usuario,
                             Institucion = persona.Institucion,
-                            NotasRecibidas = persona.NotasRecibidas,
-                            NotasLeidas = persona.NotasLeidas,
-                            NotasFirmadas = persona.NotasFirmadas,
+                            NotaPersonas = persona.NotaPersonas,
                             Roles = new List<Grupo>()
                         };
                         if (persona.Usuario.Grupos.Count() > 0)

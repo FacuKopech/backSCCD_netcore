@@ -7,6 +7,7 @@ using Model.Observer;
 using SCCD.FacadePattern;
 using System.Data;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace SCCD.Controllers
 {
@@ -45,20 +46,22 @@ namespace SCCD.Controllers
                 List<NotaConEnumerables> notasARetornar = new List<NotaConEnumerables>();
                 var id = Guid.Parse(_session.IdUserLogueado);
                 var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(id);
-                var notasRecibidas = _notaRepositorie.GetNotasRecibidasPersona(personaLogueada.Id);
-                if (notasRecibidas != null && notasRecibidas.Count() > 0)
+                var notas = _notaRepositorie.GetNotasRecibidasYFirmadas(personaLogueada.Id);
+                
+                if (notas.NotasRecibidas != null && notas.NotasRecibidas.Count() > 0)
                 {
-                    foreach (var notaRecibida in notasRecibidas)
+                    foreach (var notaRecibida in notas.NotasRecibidas)
                     {
+                        var leida = notaRecibida.NotaPersonas.Where(x => x.NotaId == notaRecibida.Id && x.PersonaId == personaLogueada.Id).FirstOrDefault().Leida == true ? true : false;
                         NotaConEnumerables notaARetornar = new NotaConEnumerables {
                             Id = notaRecibida.Id,
                             Titulo = notaRecibida.Titulo,
                             Fecha = notaRecibida.Fecha,
-                            Leida = notaRecibida.Leida,
+                            Leida = leida,
                             Emisor = notaRecibida.Emisor,
-                            Destinatarios = new List<Persona>(notaRecibida.Destinatarios),
-                            LeidaPor = new List<Persona>(notaRecibida.LeidaPor),
-                            FirmadaPor = new List<Persona>(notaRecibida.FirmadaPor),
+                            Destinatarios = new List<Persona>(notaRecibida.NotaPersonas.Select(persona => persona.Persona).ToList()),
+                            LeidaPor = new List<Persona>(notaRecibida.NotaPersonas.Where(nota => nota.Leida == true).Select(persona => persona.Persona).ToList()),
+                            FirmadaPor = new List<Persona>(notaRecibida.NotaPersonas.Where(nota => nota.Firmada == true).Select(persona => persona.Persona).ToList()),
                             Cuerpo = notaRecibida.Cuerpo,
                             Tipo = notaRecibida.Tipo,
                             Referido = notaRecibida.Referido,
@@ -92,11 +95,11 @@ namespace SCCD.Controllers
                     Id = nota.Id,
                     Titulo = nota.Titulo,
                     Fecha = nota.Fecha,
-                    Leida = nota.Leida,
+                    Leida = false,
                     Emisor = nota.Emisor,
-                    Destinatarios = new List<Persona>(nota.Destinatarios),
-                    LeidaPor = new List<Persona>(nota.LeidaPor),
-                    FirmadaPor = new List<Persona>(nota.FirmadaPor),
+                    Destinatarios = new List<Persona>(nota.NotaPersonas.Select(persona => persona.Persona).ToList()),
+                    LeidaPor = new List<Persona>(nota.NotaPersonas.Where(nota => nota.Leida == true).Select(persona => persona.Persona).ToList()),
+                    FirmadaPor = new List<Persona>(nota.NotaPersonas.Where(nota => nota.Firmada == true).Select(persona => persona.Persona).ToList()),
                     Cuerpo = nota.Cuerpo,
                     Tipo = nota.Tipo,
                     Referido = nota.Referido,
@@ -128,11 +131,11 @@ namespace SCCD.Controllers
             string IdUserLogueado = _session.IdUserLogueado;
             var idUser = Guid.Parse(IdUserLogueado);
             var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(idUser);
-
+            var notaPersona = nota.NotaPersonas.Where(x => x.NotaId == nota.Id && x.PersonaId == personaLogueada.Id).FirstOrDefault();
             //subscribimos observers a observable           
-            if (!nota.LeidaPor.Contains(personaLogueada))
+            if (!notaPersona.Leida)
             {
-                NotaObservable notaObservable = new NotaObservable(nota);
+                NotaObservable notaObservable = new NotaObservable(notaPersona);
                 notaObservable.Attach(new EmisorNota(nota.Emisor.Email, personaLogueada.Email));
                 notaObservable.Leida = true;
                 _notaRepositorie.ActualizarNotaLeida(nota, personaLogueada.Email);
@@ -501,15 +504,12 @@ namespace SCCD.Controllers
                             {
                                 Alumno hijoReferido = null;
                                 Aula aulaDestinada = null;
-
                                 Nota notaAAgregar = new Nota
                                 {
                                     Titulo = nuevaNota.Titulo,
                                     Fecha = DateTime.Today,
-                                    Leida = false,
                                     Emisor = personaLogueada,
-                                    LeidaPor = new List<Persona>(),
-                                    FirmadaPor = new List<Persona>(),
+                                    NotaPersonas = new List<NotaPersona>(),
                                     Cuerpo = nuevaNota.Cuerpo,
                                     Tipo = Model.Enums.TipoNota.Particular,
                                 };
@@ -522,9 +522,19 @@ namespace SCCD.Controllers
                                     {
                                         notaAAgregar.AulasDestinadas = new List<Aula>();
                                         notaAAgregar.AulasDestinadas.Add(aulaDestinada);
-                                        notaAAgregar.Destinatarios = new List<Persona> {
-                                            aulaDestinada.Docente
+                                        NotaPersona nuevaNotaPersona = new NotaPersona
+                                        {
+                                            Nota = notaAAgregar,
+                                            NotaId = notaAAgregar.Id,
+                                            Persona = aulaDestinada.Docente,
+                                            PersonaId = aulaDestinada.Docente.Id,
+                                            Leida = false,
+                                            FechaLectura = null,
+                                            Firmada = false,
+                                            FechaFirma = null
                                         };
+                                        notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                        aulaDestinada.Docente.NotaPersonas.Add(nuevaNotaPersona);
                                     }
                                     else
                                     {
@@ -536,6 +546,7 @@ namespace SCCD.Controllers
                                     return NotFound(false);
                                 }
                                 _notaRepositorie.Agregar(notaAAgregar);
+                                _personaRepositorie.ActualizarNotasRecibidas(aulaDestinada.Docente.Id, notaAAgregar.NotaPersonas.Where(x => x.PersonaId == aulaDestinada.Docente.Id).FirstOrDefault());
                                 this.ActualizarNombreArchivosNota(notaAAgregar.Id);
                                 _facade.EnviarMailNuevaNota(notaAAgregar, true);
                                 return Ok(true);
@@ -546,27 +557,41 @@ namespace SCCD.Controllers
                                 {
                                     Titulo = nuevaNota.Titulo,
                                     Fecha = DateTime.Today,
-                                    Leida = false,
                                     Emisor = personaLogueada,
-                                    LeidaPor = new List<Persona>(),
-                                    FirmadaPor = new List<Persona>(),
+                                    NotaPersonas = new List<NotaPersona>(),
                                     Cuerpo = nuevaNota.Cuerpo,
                                     Tipo = Model.Enums.TipoNota.Generica,
                                     Referido = null,
                                     AulasDestinadas = null
                                 };
 
-                                notaAAgregar.Destinatarios = new List<Persona>();
                                 foreach (var destinatario in nuevaNota.Destinatarios)
                                 {
                                     var persona = _personaRepositorie.ObtenerAsync(destinatario);
                                     if (persona != null)
                                     {
-                                        notaAAgregar.Destinatarios.Add(persona);
+                                        NotaPersona nuevaNotaPersona = new NotaPersona
+                                        {
+                                            Nota = notaAAgregar,
+                                            NotaId = notaAAgregar.Id,
+                                            Persona = persona,
+                                            PersonaId = persona.Id,
+                                            Leida = false,
+                                            FechaLectura = null,
+                                            Firmada = false,
+                                            FechaFirma = null
+                                        };
+                                        notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                        persona.NotaPersonas.Add(nuevaNotaPersona);
                                     }
                                 }
 
                                 _notaRepositorie.Agregar(notaAAgregar);
+                                foreach (var destinatario in nuevaNota.Destinatarios)
+                                {
+                                    var persona = _personaRepositorie.ObtenerAsync(destinatario);
+                                    _personaRepositorie.ActualizarNotasRecibidas(persona.Id, notaAAgregar.NotaPersonas.Where(x => x.PersonaId == persona.Id).FirstOrDefault());
+                                }
                                 this.ActualizarNombreArchivosNota(notaAAgregar.Id);
                                 _facade.EnviarMailNuevaNota(notaAAgregar, true);
                                 return Ok(true);
@@ -583,10 +608,8 @@ namespace SCCD.Controllers
                                 {
                                     Titulo = nuevaNota.Titulo,
                                     Fecha = DateTime.Today,
-                                    Leida = false,
                                     Emisor = personaLogueada,
-                                    LeidaPor = new List<Persona>(),
-                                    FirmadaPor = new List<Persona>(),
+                                    NotaPersonas = new List<NotaPersona>(),
                                     Cuerpo = nuevaNota.Cuerpo,
                                     Tipo = Model.Enums.TipoNota.Particular,
                                 };
@@ -607,10 +630,21 @@ namespace SCCD.Controllers
                                     var padresDeAlumno = _personaRepositorie.ObtenerPadresDeAlumno(alumnoReferido.Id);
                                     if (padresDeAlumno != null && padresDeAlumno.Count() > 0)
                                     {
-                                        notaAAgregar.Destinatarios = new List<Persona>();
                                         foreach (var padre in padresDeAlumno)
                                         {
-                                            notaAAgregar.Destinatarios.Add(padre);
+                                            NotaPersona nuevaNotaPersona = new NotaPersona
+                                            {
+                                                Nota = notaAAgregar,
+                                                NotaId = notaAAgregar.Id,
+                                                Persona = padre,
+                                                PersonaId = padre.Id,
+                                                Leida = false,
+                                                FechaLectura = null,
+                                                Firmada = false,
+                                                FechaFirma = null
+                                            };
+                                            notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                            padre.NotaPersonas.Add(nuevaNotaPersona);
                                         }
                                     }
                                     else
@@ -618,6 +652,10 @@ namespace SCCD.Controllers
                                         return NotFound(false);
                                     }
                                     _notaRepositorie.Agregar(notaAAgregar);
+                                    foreach (var padre in padresDeAlumno)
+                                    {
+                                        _personaRepositorie.ActualizarNotasRecibidas(padre.Id, notaAAgregar.NotaPersonas.Where(x => x.PersonaId == padre.Id).FirstOrDefault());
+                                    }
                                     this.ActualizarNombreArchivosNota(notaAAgregar.Id);
                                     _facade.EnviarMailNuevaNota(notaAAgregar, true);
                                     return Ok(true);
@@ -637,10 +675,8 @@ namespace SCCD.Controllers
                                     {
                                         Titulo = nuevaNota.Titulo,
                                         Fecha = DateTime.Today,
-                                        Leida = false,
                                         Emisor = personaLogueada,
-                                        LeidaPor = new List<Persona>(),
-                                        FirmadaPor = new List<Persona>(),
+                                        NotaPersonas = new List<NotaPersona>(),
                                         Cuerpo = nuevaNota.Cuerpo,
                                         Tipo = Model.Enums.TipoNota.Generica,
                                         Referido = null
@@ -660,7 +696,6 @@ namespace SCCD.Controllers
 
                                         if (aulaDestinada.Alumnos.Count() > 0 && aulaDestinada.Alumnos != null)
                                         {
-                                            notaAAgregar.Destinatarios = new List<Persona>();
                                             foreach (var alumno in aulaDestinada.Alumnos)
                                             {
                                                 var padresAlumno = _personaRepositorie.ObtenerPadresDeAlumno(alumno.Id);
@@ -668,10 +703,22 @@ namespace SCCD.Controllers
                                                 {
                                                     foreach (var padre in padresAlumno)
                                                     {
-                                                        var padreYaAgregado = notaAAgregar.Destinatarios.Where(x => x.Id == padre.Id).FirstOrDefault();
+                                                        var padreYaAgregado = notaAAgregar.NotaPersonas.Where(x => x.PersonaId == padre.Id).FirstOrDefault();
                                                         if (padreYaAgregado == null)
                                                         {
-                                                            notaAAgregar.Destinatarios.Add(padre);
+                                                            NotaPersona nuevaNotaPersona = new NotaPersona
+                                                            {
+                                                                Nota = notaAAgregar,
+                                                                NotaId = notaAAgregar.Id,
+                                                                Persona = padre,
+                                                                PersonaId = padre.Id,
+                                                                Leida = false,
+                                                                FechaLectura = null,
+                                                                Firmada = false,
+                                                                FechaFirma = null
+                                                            };
+                                                            notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                                            padre.NotaPersonas.Add(nuevaNotaPersona);
                                                         }
                                                     }
                                                 }
@@ -688,6 +735,10 @@ namespace SCCD.Controllers
                                     }
 
                                     _notaRepositorie.Agregar(notaAAgregar);
+                                    foreach (var notaPersona in notaAAgregar.NotaPersonas)
+                                    {
+                                        _personaRepositorie.ActualizarNotasRecibidas(notaPersona.PersonaId, notaPersona);
+                                    }
                                     this.ActualizarNombreArchivosNota(notaAAgregar.Id);
                                     _facade.EnviarMailNuevaNota(notaAAgregar, true);
                                     return Ok(true);
@@ -698,22 +749,31 @@ namespace SCCD.Controllers
                                     {
                                         Titulo = nuevaNota.Titulo,
                                         Fecha = DateTime.Today,
-                                        Leida = false,
                                         Emisor = personaLogueada,
-                                        LeidaPor = new List<Persona>(),
-                                        FirmadaPor = new List<Persona>(),
+                                        NotaPersonas = new List<NotaPersona>(),
                                         Cuerpo = nuevaNota.Cuerpo,
                                         Tipo = Model.Enums.TipoNota.Generica,
                                         Referido = null,
                                         AulasDestinadas = null
                                     };
-                                    notaAAgregar.Destinatarios = new List<Persona>();
                                     foreach (var destinatarioId in nuevaNota.Destinatarios)
                                     {
                                         var destinatario = _personaRepositorie.ObtenerAsync(destinatarioId);
                                         if (destinatario != null)
                                         {
-                                            notaAAgregar.Destinatarios.Add(destinatario);
+                                            NotaPersona nuevaNotaPersona = new NotaPersona
+                                            {
+                                                Nota = notaAAgregar,
+                                                NotaId = notaAAgregar.Id,
+                                                Persona = destinatario,
+                                                PersonaId = destinatario.Id,
+                                                Leida = false,
+                                                FechaLectura = null,
+                                                Firmada = false,
+                                                FechaFirma = null
+                                            };
+                                            notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                            destinatario.NotaPersonas.Add(nuevaNotaPersona);
                                         }
                                         else
                                         {
@@ -722,6 +782,10 @@ namespace SCCD.Controllers
                                     }
 
                                     _notaRepositorie.Agregar(notaAAgregar);
+                                    foreach (var notaPersona in notaAAgregar.NotaPersonas)
+                                    {
+                                        _personaRepositorie.ActualizarNotasRecibidas(notaPersona.PersonaId, notaPersona);
+                                    }
                                     this.ActualizarNombreArchivosNota(notaAAgregar.Id);
                                     _facade.EnviarMailNuevaNota(notaAAgregar, true);
                                     return Ok(true);
@@ -739,12 +803,11 @@ namespace SCCD.Controllers
                                 {
                                     Titulo = nuevaNota.Titulo,
                                     Fecha = DateTime.Today,
-                                    Leida = false,
                                     Emisor = personaLogueada,
-                                    LeidaPor = new List<Persona>(),
-                                    FirmadaPor = new List<Persona>(),
+                                    NotaPersonas = new List<NotaPersona>(),
                                     Cuerpo = nuevaNota.Cuerpo,
                                     Tipo = Model.Enums.TipoNota.Particular,
+                                    AulasDestinadas = new List<Aula>(),
                                 };
                                 alumnoReferido = _personaRepositorie.GetAlumno(nuevaNota.IdAlumnoReferido);
                                 if (alumnoReferido != null)
@@ -753,7 +816,6 @@ namespace SCCD.Controllers
                                     aulaDestinada = _aulaRepositorie.ObtenerAulaDeAlumno(alumnoReferido.Id);
                                     if (aulaDestinada != null)
                                     {
-                                        notaAAgregar.AulasDestinadas = new List<Aula>();
                                         notaAAgregar.AulasDestinadas.Add(aulaDestinada);
                                     }
                                     else
@@ -763,10 +825,21 @@ namespace SCCD.Controllers
                                     var padresDeAlumno = _personaRepositorie.ObtenerPadresDeAlumno(alumnoReferido.Id);
                                     if (padresDeAlumno != null && padresDeAlumno.Count() > 0)
                                     {
-                                        notaAAgregar.Destinatarios = new List<Persona>();
                                         foreach (var padre in padresDeAlumno)
                                         {
-                                            notaAAgregar.Destinatarios.Add(padre);
+                                            NotaPersona nuevaNotaPersona = new NotaPersona
+                                            {
+                                                Nota = notaAAgregar,
+                                                NotaId = notaAAgregar.Id,
+                                                Persona = padre,
+                                                PersonaId = padre.Id,
+                                                Leida = false,
+                                                FechaLectura = null,
+                                                Firmada = false,
+                                                FechaFirma = null
+                                            };
+                                            notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                            padre.NotaPersonas.Add(nuevaNotaPersona);
                                         }
                                     }
                                     else
@@ -774,6 +847,10 @@ namespace SCCD.Controllers
                                         return NotFound(false);
                                     }
                                     _notaRepositorie.Agregar(notaAAgregar);
+                                    foreach (var notaPersona in notaAAgregar.NotaPersonas)
+                                    {
+                                        _personaRepositorie.ActualizarNotasRecibidas(notaPersona.PersonaId, notaPersona);
+                                    }
                                     this.ActualizarNombreArchivosNota(notaAAgregar.Id);
                                     _facade.EnviarMailNuevaNota(notaAAgregar, true);
                                     return Ok(true);
@@ -793,16 +870,14 @@ namespace SCCD.Controllers
                                     {
                                         Titulo = nuevaNota.Titulo,
                                         Fecha = DateTime.Today,
-                                        Leida = false,
                                         Emisor = personaLogueada,
-                                        LeidaPor = new List<Persona>(),
-                                        FirmadaPor = new List<Persona>(),
+                                        NotaPersonas = new List<NotaPersona>(),
                                         Cuerpo = nuevaNota.Cuerpo,
                                         Tipo = Model.Enums.TipoNota.Generica,
-                                        Referido = null
+                                        Referido = null,
+                                        AulasDestinadas = new List<Aula>()                                    
                                     };
-                                    notaAAgregar.AulasDestinadas = new List<Aula>();
-                                    notaAAgregar.Destinatarios = new List<Persona>();
+
                                     foreach (var idAula in nuevaNota.AulasDestinadas)
                                     {
                                         aulaDestinada = _aulaRepositorie.ObtenerAsync(idAula);
@@ -824,10 +899,22 @@ namespace SCCD.Controllers
                                                 {
                                                     foreach (var padre in padresAlumno)
                                                     {
-                                                        var padreYaAgregado = notaAAgregar.Destinatarios.Where(x => x.Id == padre.Id).FirstOrDefault();
+                                                        var padreYaAgregado = notaAAgregar.NotaPersonas.Where(x => x.PersonaId == padre.Id).FirstOrDefault();
                                                         if (padreYaAgregado == null)
                                                         {
-                                                            notaAAgregar.Destinatarios.Add(padre);
+                                                            NotaPersona nuevaNotaPersona = new NotaPersona
+                                                            {
+                                                                Nota = notaAAgregar,
+                                                                NotaId = notaAAgregar.Id,
+                                                                Persona = padre,
+                                                                PersonaId = padre.Id,
+                                                                Leida = false,
+                                                                FechaLectura = null,
+                                                                Firmada = false,
+                                                                FechaFirma = null
+                                                            };
+                                                            notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                                            padre.NotaPersonas.Add(nuevaNotaPersona);
                                                         }
                                                     }
                                                 }
@@ -838,10 +925,22 @@ namespace SCCD.Controllers
                                             }
                                             if (aulaDestinada.Docente != null)
                                             {
-                                                var docenteYaAgregada = notaAAgregar.Destinatarios.Where(x => x.Id == aulaDestinada.Docente.Id).FirstOrDefault();
+                                                var docenteYaAgregada = notaAAgregar.NotaPersonas.Where(x => x.PersonaId == aulaDestinada.Docente.Id).FirstOrDefault();
                                                 if (docenteYaAgregada == null)
                                                 {
-                                                    notaAAgregar.Destinatarios.Add(aulaDestinada.Docente);
+                                                    NotaPersona nuevaNotaPersona = new NotaPersona
+                                                    {
+                                                        Nota = notaAAgregar,
+                                                        NotaId = notaAAgregar.Id,
+                                                        Persona = aulaDestinada.Docente,
+                                                        PersonaId = aulaDestinada.Docente.Id,
+                                                        Leida = false,
+                                                        FechaLectura = null,
+                                                        Firmada = false,
+                                                        FechaFirma = null
+                                                    };
+                                                    notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                                    aulaDestinada.Docente.NotaPersonas.Add(nuevaNotaPersona);
                                                 }
                                             }
                                             else
@@ -855,6 +954,10 @@ namespace SCCD.Controllers
                                         }
                                     }
                                     _notaRepositorie.Agregar(notaAAgregar);
+                                    foreach (var notaPersona in notaAAgregar.NotaPersonas)
+                                    {
+                                        _personaRepositorie.ActualizarNotasRecibidas(notaPersona.PersonaId, notaPersona);
+                                    }
                                     this.ActualizarNombreArchivosNota(notaAAgregar.Id);
                                     _facade.EnviarMailNuevaNota(notaAAgregar, true);
                                     return Ok(true);
@@ -865,22 +968,31 @@ namespace SCCD.Controllers
                                     {
                                         Titulo = nuevaNota.Titulo,
                                         Fecha = DateTime.Today,
-                                        Leida = false,
                                         Emisor = personaLogueada,
-                                        LeidaPor = new List<Persona>(),
-                                        FirmadaPor = new List<Persona>(),
+                                        NotaPersonas = new List<NotaPersona>(),
                                         Cuerpo = nuevaNota.Cuerpo,
                                         Tipo = Model.Enums.TipoNota.Generica,
                                         Referido = null,
                                         AulasDestinadas = null
                                     };
-                                    notaAAgregar.Destinatarios = new List<Persona>();
                                     foreach (var destinatarioId in nuevaNota.Destinatarios)
                                     {
                                         var destinatario = _personaRepositorie.ObtenerAsync(destinatarioId);
                                         if (destinatario != null)
                                         {
-                                            notaAAgregar.Destinatarios.Add(destinatario);
+                                            NotaPersona nuevaNotaPersona = new NotaPersona
+                                            {
+                                                Nota = notaAAgregar,
+                                                NotaId = notaAAgregar.Id,
+                                                Persona = destinatario,
+                                                PersonaId = destinatario.Id,
+                                                Leida = false,
+                                                FechaLectura = null,
+                                                Firmada = false,
+                                                FechaFirma = null
+                                            };
+                                            notaAAgregar.NotaPersonas.Add(nuevaNotaPersona);
+                                            destinatario.NotaPersonas.Add(nuevaNotaPersona);
                                         }
                                         else
                                         {
@@ -889,6 +1001,10 @@ namespace SCCD.Controllers
                                     }
 
                                     _notaRepositorie.Agregar(notaAAgregar);
+                                    foreach (var notaPersona in notaAAgregar.NotaPersonas)
+                                    {
+                                        _personaRepositorie.ActualizarNotasRecibidas(notaPersona.PersonaId, notaPersona);
+                                    }
                                     this.ActualizarNombreArchivosNota(notaAAgregar.Id);
                                     _facade.EnviarMailNuevaNota(notaAAgregar, true);
                                     return Ok(true);
@@ -928,17 +1044,26 @@ namespace SCCD.Controllers
                         var docente = _aulaRepositorie.ObtenerDocenteDeAula(aula.Id);
                         if (docente != null)
                         {
-                            
-                            ICollection<Persona> destinatarios = new List<Persona>();
-                            destinatarios.Add(docente);
                             Nota nuevaNota = new Nota { 
                                 Titulo = nuevaNotaADocente.Titulo,
                                 Cuerpo = nuevaNotaADocente.Cuerpo,
                                 Fecha = DateTime.Now,
                                 AulasDestinadas = new List<Aula> {aula},
-                                Leida = false,                                                                                                
-                                Destinatarios = destinatarios                                
+                                NotaPersonas = new List<NotaPersona>(),                           
                             };
+                            NotaPersona nuevaNotaPersona = new NotaPersona
+                            {
+                                Nota = nuevaNota,
+                                NotaId = nuevaNota.Id,
+                                Persona = docente,
+                                PersonaId = docente.Id,
+                                Leida = false,
+                                FechaLectura = null,
+                                Firmada = false,
+                                FechaFirma = null
+                            };
+                            nuevaNota.NotaPersonas.Add(nuevaNotaPersona);
+                            docente.NotaPersonas.Add(nuevaNotaPersona);
                             var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                             if (personaLogueada != null)
                             {
@@ -959,7 +1084,7 @@ namespace SCCD.Controllers
                             }
 
                             _notaRepositorie.Agregar(nuevaNota);
-                            _personaRepositorie.ActualizarNotasRecibidas(docente.Id, nuevaNota);
+                            _personaRepositorie.ActualizarNotasRecibidas(docente.Id, nuevaNotaPersona);
                             this.ActualizarNombreArchivosNota(nuevaNota.Id);
                             _facade.EnviarMailNuevaNota(nuevaNota, true);
                             return Ok(true);
@@ -1000,17 +1125,16 @@ namespace SCCD.Controllers
                 {
                     var padresAlumno = _personaRepositorie.ObtenerPadresDeAlumno(alumno.Id);                    
                     if (padresAlumno != null && padresAlumno.Count() > 0)
-                    {
-                        ICollection<Persona> destinatarios = new List<Persona>();                        
+                    {                   
                         Nota nuevaNota = new Nota
                         {
                             Titulo = nuevaNotaAPadres.Titulo,
                             Cuerpo = nuevaNotaAPadres.Cuerpo,
                             Fecha = DateTime.Now,
                             AulasDestinadas = new List<Aula>{aulaAlumno},
-                            Leida = false,
-                            Destinatarios = destinatarios
+                            NotaPersonas = new List<NotaPersona>(),
                         };
+                       
                         var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
                         if (personaLogueada != null)
                         {
@@ -1032,13 +1156,25 @@ namespace SCCD.Controllers
                         
                         foreach (var padre in padresAlumno)
                         {
-                            nuevaNota.Destinatarios.Add(padre);                                                       
+                            NotaPersona nuevaNotaPersona = new NotaPersona
+                            {
+                                Nota = nuevaNota,
+                                NotaId = nuevaNota.Id,
+                                Persona = padre,
+                                PersonaId = padre.Id,
+                                Leida = false,
+                                FechaLectura = null,
+                                Firmada = false,
+                                FechaFirma = null
+                            };
+                            nuevaNota.NotaPersonas.Add(nuevaNotaPersona);
+                            padre.NotaPersonas.Add(nuevaNotaPersona);
                         }
                         _notaRepositorie.Agregar(nuevaNota);
-                        
                         foreach (var padre in padresAlumno)
                         {
-                            _personaRepositorie.ActualizarNotasRecibidas(padre.Id, nuevaNota);
+                            var notaPersona = nuevaNota.NotaPersonas.Where(x => x.PersonaId == padre.Id).FirstOrDefault();
+                            _personaRepositorie.ActualizarNotasRecibidas(padre.Id, notaPersona);
                         }
                         this.ActualizarNombreArchivosNota(nuevaNota.Id);
                         _facade.EnviarMailNuevaNota(nuevaNota, true);
@@ -1090,6 +1226,10 @@ namespace SCCD.Controllers
             }
             catch (Exception ex)
             {
+                if (ex.Message.Contains("Request body too large"))
+                {
+                    return BadRequest("Request body too large");
+                }
                 return BadRequest(ex);                
             }                       
         }
@@ -1284,7 +1424,19 @@ namespace SCCD.Controllers
                                     if (aulaEnNota == null)
                                     {                                        
                                         nota.AulasDestinadas.Add(AulaDestinada);
-                                        nota.Destinatarios.Add(AulaDestinada.Docente);
+                                        NotaPersona nuevaNotaPersona = new NotaPersona
+                                        {
+                                            Nota = nota,
+                                            NotaId = nota.Id,
+                                            Persona = AulaDestinada.Docente,
+                                            PersonaId = AulaDestinada.Docente.Id,
+                                            Leida = false,
+                                            FechaLectura = null,
+                                            Firmada = false,
+                                            FechaFirma = null
+                                        };
+                                        nota.NotaPersonas.Add(nuevaNotaPersona);
+                                        AulaDestinada.Docente.NotaPersonas.Add(nuevaNotaPersona);
                                     }
                                     else if (nota.Titulo == notaAModificar.Titulo && nota.Cuerpo == notaAModificar.Cuerpo)
                                     {
@@ -1297,15 +1449,20 @@ namespace SCCD.Controllers
                             {
                                 var notaEnListaDestinadas = notaAModificar.AulasDestinadas.Where(x => x == aulaEnNota.Id).FirstOrDefault();
                                 if (notaEnListaDestinadas == Guid.Empty)
-                                {                                    
-                                    nota.Destinatarios.Remove(aulaEnNota.Docente);
+                                {
+                                    var notaPersona = nota.NotaPersonas.Where(x => x.PersonaId == aulaEnNota.Docente.Id).FirstOrDefault();
+                                    nota.NotaPersonas.Remove(notaPersona);
                                     nota.AulasDestinadas.Remove(aulaEnNota);
                                 }
                             }
                         }                        
                         nota.Titulo = notaAModificar.Titulo;
                         nota.Cuerpo = notaAModificar.Cuerpo;
-                        nota.LeidaPor.Clear(); // Eliminamos aquellos que hayan leido la nota, para que re lean la nota modificada
+                         
+                        foreach (var notaPersona in nota.NotaPersonas)
+                        {
+                            notaPersona.Leida = false; // Reiniciamos la property Leida a false, para que re lean la nota modificada
+                        }
                         _notaRepositorie.Modificar(nota);
                         var notaModificada = _notaRepositorie.ObtenerAsync(id);
                         _facade.EnviarMailNuevaNota(notaModificada, false);

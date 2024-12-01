@@ -20,14 +20,14 @@ namespace Data.Repositories
             _context = context;
         }
 
-        public void ActualizarNotasRecibidas(Guid id, Nota nuevaNota)
+        public void ActualizarNotasRecibidas(Guid id, NotaPersona nuevaNotaPersona)
         {
             var destinatario = _context.Personas.FirstOrDefault(x => x.Id == id);
             if (destinatario != null)
             {
-                destinatario.NotasRecibidas.Add(nuevaNota);
-
+                destinatario.NotaPersonas.Add(nuevaNotaPersona);
                 _context.Entry(destinatario).State = EntityState.Modified;
+                _context.SaveChanges();
             }
         }
 
@@ -62,7 +62,10 @@ namespace Data.Repositories
 
         public void Borrar(Guid id)
         {
-            var persona = _context.Personas.Where(x => x.Id == id).FirstOrDefault();
+            var persona = _context.Personas.Where(x => x.Id == id)
+                .Include(eventos => eventos.EventosPersona)
+                .Include(notas => notas.NotaPersonas)
+                .FirstOrDefault();
             if (persona != null)
             {
                 if (persona is Alumno)
@@ -91,6 +94,19 @@ namespace Data.Repositories
                     ((Alumno)persona).Asistencias.Clear();
                     ((Alumno)persona).Ausencias.Clear();
                     _context.Entry((Alumno)persona).State = EntityState.Modified;
+                }
+                else
+                {
+                    foreach (var eventoPersona in persona.EventosPersona)
+                    {
+                        _context.EventoPersona.Remove(eventoPersona);
+                    }
+
+                    foreach (var notaPersona in persona.NotaPersonas)
+                    {
+                        _context.NotaPersona.Remove(notaPersona);
+                    }
+                    _context.SaveChanges();
                 }
                            
                 _context.Personas.Remove(persona);
@@ -281,9 +297,8 @@ namespace Data.Repositories
             var persona = _context.Personas.OfType<Persona>().Where(x => x.Id == id)
                 .Include(i => i.Institucion)
                 .Include(p => p.Usuario).ThenInclude(user => user.Grupos)
-                .Include(nf => nf.NotasFirmadas)
-                .Include(nl => nl.NotasLeidas)
-                .Include(nr => nr.NotasRecibidas).ThenInclude(e => e.Emisor).FirstOrDefault();
+                .Include(nf => nf.NotaPersonas)
+                .FirstOrDefault();
 
             if (persona != null)
             {
@@ -298,12 +313,9 @@ namespace Data.Repositories
             var persona = _context.Personas.OfType<Persona>().Where(x => x.Usuario.Id == idUser)
                 .Include(p => p.Usuario).ThenInclude(g => g.Grupos)
                 .Include(i => i.Institucion)
-                .Include(nl => nl.NotasLeidas)
-                .Include(nf => nf.NotasFirmadas)
-                .Include(nr => nr.NotasRecibidas).ThenInclude(e => e.Emisor)
-                .Include(ea => ea.EventosAsistire)
-                .Include(ena => ena.EventosNoAsistire)
-                .Include(eta => eta.EventosTalVezAsista).FirstOrDefault();
+                .Include(nl => nl.NotaPersonas)
+                .Include(ea => ea.EventosPersona)
+                .FirstOrDefault();
             
             if (persona != null)
             {

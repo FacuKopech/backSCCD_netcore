@@ -8,10 +8,10 @@ namespace Model.Observer
 {
     public abstract class Subject
     {
-        public Entities.Nota nota;
+        public Entities.NotaPersona nota;
         private List<IObserver> observadores = new List<IObserver>();
 
-        public Subject(Entities.Nota Nota)
+        public Subject(Entities.NotaPersona Nota)
         {
             this.nota = Nota;
         }

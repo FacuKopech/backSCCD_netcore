@@ -20,35 +20,19 @@ namespace Data.Repositories
 
         public Task<bool> ActualizarNotaLeida(Nota nota, string emailLogueado)
         {
-            var notaActualizar = _context.Notas.Where(x => x.Id == nota.Id)
-                .Include(lp => lp.LeidaPor)
+            var notaActualizar = _context.NotaPersona.Where(x => x.NotaId == nota.Id && x.Persona.Email == emailLogueado)
                 .FirstOrDefault();
+
             if (notaActualizar != null)
             {
                 notaActualizar.Leida = true;
-                var persona = _context.Personas.Where(x => x.Email == emailLogueado)
-                    .Include(u => u.Usuario)
-                    .Include(i => i.Institucion)
-                    .Include(nr => nr.NotasRecibidas)
-                    .Include(nl => nl.NotasLeidas)
-                    .FirstOrDefault();
-                if (persona != null)
-                {
-                    notaActualizar.LeidaPor.Add(persona);
-                    _context.Entry(notaActualizar).State = EntityState.Modified;
-                    //persona.NotasLeidas.Add(notaActualizar);
-                    //_context.Entry(persona).State = EntityState.Modified;
-                    _context.SaveChanges();
-                }
-                else
-                {
-                    return new Task<bool>(() => false);
-                }
-
+                notaActualizar.FechaLectura = DateTime.Now;
+                _context.Entry(notaActualizar).State = EntityState.Modified;
+                _context.SaveChanges();
+                
                 return new Task<bool>(() => true);
             }
             return new Task<bool>(() => false);
-
         }
 
         public void Agregar(Nota entity)
@@ -79,29 +63,15 @@ namespace Data.Repositories
 
         public Task<bool> FirmaDeNota(Nota nota, string emailLogueado)
         {
-            var notaFirmada = _context.Notas.Where(x => x.Id == nota.Id)
-                .Include(fp => fp.FirmadaPor)
+            var notaFirmada = _context.NotaPersona.Where(x => x.NotaId == nota.Id && x.Persona.Email == emailLogueado)
                 .FirstOrDefault();
+
             if (notaFirmada != null)
             {
-                var persona = _context.Personas.Where(x => x.Email == emailLogueado)
-                    .Include(u => u.Usuario)
-                    .Include(i => i.Institucion)
-                    .Include(nr => nr.NotasRecibidas)
-                    .Include(nf => nf.NotasFirmadas)
-                    .FirstOrDefault();
-                if (persona != null)
-                {
-                    notaFirmada.FirmadaPor.Add(persona);
-                    _context.Entry(notaFirmada).State = EntityState.Modified;
-                    persona.NotasFirmadas.Add(notaFirmada);
-                    _context.Entry(persona).State = EntityState.Modified;
-                    _context.SaveChanges();
-                }
-                else
-                {
-                    return new Task<bool>(() => false);
-                }
+                notaFirmada.Firmada = true;
+                notaFirmada.FechaFirma = DateTime.Now;
+                _context.Entry(notaFirmada).State = EntityState.Modified;
+                _context.SaveChanges();
                 return new Task<bool>(() => true);
             }
             return new Task<bool>(() => false);
@@ -109,12 +79,14 @@ namespace Data.Repositories
 
         public IEnumerable<Nota> GetNotasEmitidasPersona(Guid id)
         {
-            var notasEmitidas = _context.Notas.Where(x => x.Id != Guid.Empty)
-                .Include(e => e.Emisor)
-                .Include(r => r.Referido)
-                .Include(a => a.AulasDestinadas)
-                .Include(lp => lp.LeidaPor)
-                .Include(d => d.Destinatarios);
+            var notasEmitidas = _context.Notas
+            .Where(x => x.Id != Guid.Empty)
+            .Include(e => e.Emisor)
+            .Include(r => r.Referido)
+            .Include(a => a.AulasDestinadas)
+            .Include(np => np.NotaPersonas).ThenInclude(npP => npP.Persona)
+            .ToList();
+
 
             List<Nota> notas = new List<Nota>();
             foreach (var nota in notasEmitidas)
@@ -131,19 +103,38 @@ namespace Data.Repositories
             return notas;
         }
 
-        public IEnumerable<Nota> GetNotasRecibidasPersona(Guid id)
+        public (IEnumerable<Nota> NotasRecibidas, IEnumerable<Nota> NotasFirmadas) GetNotasRecibidasYFirmadas(Guid id)
         {
-            var persona = _context.Personas.Where(x => x.Id == id)
-                .Include(p => p.NotasRecibidas)
-                .ThenInclude(e => e.Emisor)
-                .Include(p => p.NotasRecibidas)
-                .ThenInclude(referido => referido.Referido)
-                .Include(notasFirmadas => notasFirmadas.NotasFirmadas)
-                .Include(p => p.NotasRecibidas).ThenInclude(aulas => aulas.AulasDestinadas)
+            var persona = _context.Personas
+                .Where(x => x.Id == id)
+                .Include(p => p.NotaPersonas)
+                    .ThenInclude(np => np.Nota)
+                        .ThenInclude(n => n.Emisor)
+                .Include(p => p.NotaPersonas)
+                    .ThenInclude(np => np.Nota)
+                        .ThenInclude(n => n.Referido)
+                .Include(p => p.NotaPersonas)
+                    .ThenInclude(np => np.Nota)
+                        .ThenInclude(n => n.AulasDestinadas)
                 .FirstOrDefault();
 
-            return persona.NotasRecibidas;
+            if (persona == null)
+            {
+                return (Enumerable.Empty<Nota>(), Enumerable.Empty<Nota>());
+            }
+
+            var notasRecibidas = persona.NotaPersonas
+                .Select(np => np.Nota)
+                .Distinct(); 
+
+            var notasFirmadas = persona.NotaPersonas
+                .Where(np => np.Firmada == true)
+                .Select(np => np.Nota)
+                .Distinct(); 
+
+            return (notasRecibidas, notasFirmadas);
         }
+
 
         public void Modificar(Nota entity)
         {
@@ -162,7 +153,7 @@ namespace Data.Repositories
                 .Include(e => e.Emisor)
                 .Include(r => r.Referido)
                 .Include(a => a.AulasDestinadas).ThenInclude(aula => aula.Docente)
-                .Include(d => d.Destinatarios).ThenInclude(u => u.Usuario).FirstOrDefault();
+                .Include(d => d.NotaPersonas).ThenInclude(u => u.Persona.Usuario).FirstOrDefault();
 
             if (nota != null)
             {

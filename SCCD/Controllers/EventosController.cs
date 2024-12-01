@@ -177,17 +177,39 @@ namespace SCCD.Controllers
                                 Descripcion = nuevoEvento.Descripcion,
                                 Motivo = nuevoEvento.Motivo,
                                 Localidad = nuevoEvento.Localidad,
-                                Asistiran = new List<Persona>(),
-                                NoAsistiran = new List<Persona>(),
-                                TalVezAsistan = new List<Persona>(),
+                                EventoPersonas = new List<EventoPersona>(),
                                 AulaDestinada = aulaDestinada,
                                 Creador = creadorDeEvento
                             };
-                            eventoAAgregar.Asistiran.Add(creadorDeEvento);
+                            EventoPersona nuevoEventoCreador = new EventoPersona
+                            {
+                                Evento = eventoAAgregar,
+                                EventoId = eventoAAgregar.Id,
+                                Persona = creadorDeEvento,
+                                PersonaId = creadorDeEvento.Id,
+                                Asistira = true,
+                                NoAsistira = false,
+                                TalVezAsista = false,
+                                FechaConfirmacion = DateTime.Now,
+                            };
+                            eventoAAgregar.EventoPersonas.Add(nuevoEventoCreador);
+                            creadorDeEvento.EventosPersona.Add(nuevoEventoCreador);
                             if (creadorDeEvento is Directivo)
                             {
                                 Persona docenteDeAula = _aulaRepositorie.ObtenerDocenteDeAula(aulaDestinada.Id);
-                                eventoAAgregar.Asistiran.Add(docenteDeAula);
+                                EventoPersona nuevoEventoDocente = new EventoPersona
+                                {
+                                    Evento = eventoAAgregar,
+                                    EventoId = eventoAAgregar.Id,
+                                    Persona = docenteDeAula,
+                                    PersonaId = docenteDeAula.Id,
+                                    Asistira = true,
+                                    NoAsistira = false,
+                                    TalVezAsista = false,
+                                    FechaConfirmacion = DateTime.Now,
+                                };
+                                eventoAAgregar.EventoPersonas.Add(nuevoEventoDocente);
+                                docenteDeAula.EventosPersona.Add(nuevoEventoDocente);
                             }
                             _eventoRepositorie.Agregar(eventoAAgregar);
                             _facade.EnviarMailNuevoEvento(eventoAAgregar);
@@ -282,20 +304,55 @@ namespace SCCD.Controllers
                         {
                             if (confirmacion == "Asiste")
                             {
-                                evento.Asistiran.Add(personaLogueada);
-                                personaLogueada.EventosAsistire.Add(evento);
-                            }else if (confirmacion == "No Asiste")
+                                EventoPersona nuevoEventoPadre = new EventoPersona
+                                {
+                                    Evento = evento,
+                                    EventoId = evento.Id,
+                                    Persona = personaLogueada,
+                                    PersonaId = personaLogueada.Id,
+                                    Asistira = true,
+                                    NoAsistira = false,
+                                    TalVezAsista = false,
+                                    FechaConfirmacion = DateTime.Now,
+                                };
+                                evento.EventoPersonas.Add(nuevoEventoPadre);                                
+                                personaLogueada.EventosPersona.Add(nuevoEventoPadre);
+                                _eventoRepositorie.ModificarEventoPorConfirmacion(nuevoEventoPadre);
+                            }
+                            else if (confirmacion == "No Asiste")
                             {
-                                evento.NoAsistiran.Add(personaLogueada);
-                                personaLogueada.EventosNoAsistire.Add(evento);
+                                EventoPersona nuevoEventoPadre = new EventoPersona
+                                {
+                                    Evento = evento,
+                                    EventoId = evento.Id,
+                                    Persona = personaLogueada,
+                                    PersonaId = personaLogueada.Id,
+                                    Asistira = false,
+                                    NoAsistira = true,
+                                    TalVezAsista = false,
+                                    FechaConfirmacion = DateTime.Now,
+                                };
+                                evento.EventoPersonas.Add(nuevoEventoPadre);
+                                personaLogueada.EventosPersona.Add(nuevoEventoPadre);
+                                _eventoRepositorie.ModificarEventoPorConfirmacion(nuevoEventoPadre);
                             }
                             else if (confirmacion == "Tal Vez Asiste")
                             {
-                                evento.TalVezAsistan.Add(personaLogueada);
-                                personaLogueada.EventosTalVezAsista.Add(evento);
+                                EventoPersona nuevoEventoPadre = new EventoPersona
+                                {
+                                    Evento = evento,
+                                    EventoId = evento.Id,
+                                    Persona = personaLogueada,
+                                    PersonaId = personaLogueada.Id,
+                                    Asistira = false,
+                                    NoAsistira = false,
+                                    TalVezAsista = true,
+                                    FechaConfirmacion = DateTime.Now,
+                                };
+                                evento.EventoPersonas.Add(nuevoEventoPadre);
+                                personaLogueada.EventosPersona.Add(nuevoEventoPadre);
+                                _eventoRepositorie.ModificarEventoPorConfirmacion(nuevoEventoPadre);
                             }
-                            _eventoRepositorie.Modificar(evento);
-                            _personaRepositorie.Modificar(personaLogueada);
                             _facade.EnviarMailConfirmacionAsistenciaEvento(evento, confirmacion);
                             return Ok(true);
                         }

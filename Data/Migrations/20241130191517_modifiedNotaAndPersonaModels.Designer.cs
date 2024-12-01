@@ -4,6 +4,7 @@ using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241130191517_modifiedNotaAndPersonaModels")]
+    partial class modifiedNotaAndPersonaModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -50,6 +52,51 @@ namespace Data.Migrations
                     b.HasIndex("NotasParaAulaId");
 
                     b.ToTable("AulaNota");
+                });
+
+            modelBuilder.Entity("EventoPersona", b =>
+                {
+                    b.Property<Guid>("AsistiranId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EventosAsistireId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("AsistiranId", "EventosAsistireId");
+
+                    b.HasIndex("EventosAsistireId");
+
+                    b.ToTable("EventoPersona");
+                });
+
+            modelBuilder.Entity("EventoPersona1", b =>
+                {
+                    b.Property<Guid>("EventosNoAsistireId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("NoAsistiranId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("EventosNoAsistireId", "NoAsistiranId");
+
+                    b.HasIndex("NoAsistiranId");
+
+                    b.ToTable("EventoPersona1");
+                });
+
+            modelBuilder.Entity("EventoPersona2", b =>
+                {
+                    b.Property<Guid>("EventosTalVezAsistaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TalVezAsistanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("EventosTalVezAsistaId", "TalVezAsistanId");
+
+                    b.HasIndex("TalVezAsistanId");
+
+                    b.ToTable("EventoPersona2");
                 });
 
             modelBuilder.Entity("GrupoUsuario", b =>
@@ -402,39 +449,6 @@ namespace Data.Migrations
                     b.ToTable("Eventos");
                 });
 
-            modelBuilder.Entity("Model.Entities.EventoPersona", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Asistira")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("EventoId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("FechaConfirmacion")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("NoAsistira")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("PersonaId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("TalVezAsista")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EventoId");
-
-                    b.HasIndex("PersonaId");
-
-                    b.ToTable("EventoPersona");
-                });
-
             modelBuilder.Entity("Model.Entities.Grupo", b =>
                 {
                     b.Property<Guid>("Id")
@@ -784,6 +798,51 @@ namespace Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("EventoPersona", b =>
+                {
+                    b.HasOne("Model.Entities.Persona", null)
+                        .WithMany()
+                        .HasForeignKey("AsistiranId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Model.Entities.Evento", null)
+                        .WithMany()
+                        .HasForeignKey("EventosAsistireId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EventoPersona1", b =>
+                {
+                    b.HasOne("Model.Entities.Evento", null)
+                        .WithMany()
+                        .HasForeignKey("EventosNoAsistireId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Model.Entities.Persona", null)
+                        .WithMany()
+                        .HasForeignKey("NoAsistiranId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EventoPersona2", b =>
+                {
+                    b.HasOne("Model.Entities.Evento", null)
+                        .WithMany()
+                        .HasForeignKey("EventosTalVezAsistaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Model.Entities.Persona", null)
+                        .WithMany()
+                        .HasForeignKey("TalVezAsistanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GrupoUsuario", b =>
                 {
                     b.HasOne("Model.Entities.Grupo", null)
@@ -908,25 +967,6 @@ namespace Data.Migrations
                     b.Navigation("Creador");
                 });
 
-            modelBuilder.Entity("Model.Entities.EventoPersona", b =>
-                {
-                    b.HasOne("Model.Entities.Evento", "Evento")
-                        .WithMany("EventoPersonas")
-                        .HasForeignKey("EventoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Model.Entities.Persona", "Persona")
-                        .WithMany("EventosPersona")
-                        .HasForeignKey("PersonaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Evento");
-
-                    b.Navigation("Persona");
-                });
-
             modelBuilder.Entity("Model.Entities.Historial", b =>
                 {
                     b.HasOne("Model.Entities.Alumno", null)
@@ -1029,11 +1069,6 @@ namespace Data.Migrations
                     b.Navigation("Eventos");
                 });
 
-            modelBuilder.Entity("Model.Entities.Evento", b =>
-                {
-                    b.Navigation("EventoPersonas");
-                });
-
             modelBuilder.Entity("Model.Entities.Nota", b =>
                 {
                     b.Navigation("NotaPersonas");
@@ -1041,8 +1076,6 @@ namespace Data.Migrations
 
             modelBuilder.Entity("Model.Entities.Persona", b =>
                 {
-                    b.Navigation("EventosPersona");
-
                     b.Navigation("NotaPersonas");
                 });
 

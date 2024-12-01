@@ -20,6 +20,7 @@ namespace Data
         public virtual DbSet<Aula> Aulas { get; set; }
         public virtual DbSet<Usuario> Usuarios { get; set; }
         public virtual DbSet<Nota> Notas { get; set; }
+        public virtual DbSet<NotaPersona> NotaPersona { get; set; }
         public virtual DbSet<Grupo> Grupos { get; set; }
         public virtual DbSet<Historial> Historiales { get; set; }
         public virtual DbSet<Ausencia> Ausencias { get; set; }
@@ -27,8 +28,9 @@ namespace Data
         public virtual DbSet<AsistenciaAlumno> AsistenciaAlumno { get; set; }
         public virtual DbSet<LoginAudit> LoginAudit { get; set; }
         public virtual DbSet<HistorialAudit> HistorialAudit { get; set; }
-
         public virtual DbSet<Evento> Eventos { get; set; }
+        public virtual DbSet<EventoPersona> EventoPersona { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -58,32 +60,36 @@ namespace Data
             modelBuilder.Entity<Nota>().HasOne(nota => nota.Emisor);
             modelBuilder.Entity<Nota>().HasKey(nota => nota.Id);
 
-            modelBuilder.Entity<Nota>()
-                .HasMany(nota => nota.Destinatarios)
-                .WithMany(p => p.NotasRecibidas);
+            modelBuilder.Entity<NotaPersona>()
+                .HasKey(np => np.Id);
 
-            modelBuilder.Entity<Nota>()
-               .HasMany(nota => nota.LeidaPor)
-               .WithMany(p => p.NotasLeidas);
+            modelBuilder.Entity<NotaPersona>()
+                .HasOne(np => np.Nota)
+                .WithMany(n => n.NotaPersonas)
+                .HasForeignKey(np => np.NotaId);
 
-            modelBuilder.Entity<Nota>()
-               .HasMany(nota => nota.FirmadaPor)
-               .WithMany(p => p.NotasFirmadas);
+            modelBuilder.Entity<NotaPersona>()
+                .HasOne(np => np.Persona)
+                .WithMany(p => p.NotaPersonas)
+                .HasForeignKey(np => np.PersonaId);
+
 
             modelBuilder.Entity<Nota>().HasMany(nota => nota.AulasDestinadas).WithMany(aulas => aulas.NotasParaAula);
 
-            modelBuilder.Entity<Evento>()
-                .HasMany(asistira => asistira.Asistiran)
-                .WithMany(eventosAsistire => eventosAsistire.EventosAsistire);
+            modelBuilder.Entity<EventoPersona>()
+                .HasKey(ep => ep.Id);
+
+            modelBuilder.Entity<EventoPersona>()
+                .HasOne(evento => evento.Evento)
+                .WithMany(persona => persona.EventoPersonas)
+                .HasForeignKey(evento => evento.EventoId);
+
+            modelBuilder.Entity<EventoPersona>()
+                .HasOne(persona => persona.Persona)
+                .WithMany(evento => evento.EventosPersona)
+                .HasForeignKey(persona => persona.PersonaId);
+
             modelBuilder.Entity<Evento>().HasKey(evento => evento.Id);
-
-            modelBuilder.Entity<Evento>()
-                .HasMany(noAsistira => noAsistira.NoAsistiran)
-                .WithMany(eventosNoAsistire => eventosNoAsistire.EventosNoAsistire);
-
-            modelBuilder.Entity<Evento>()
-                .HasMany(talVezAsistan => talVezAsistan.TalVezAsistan)
-                .WithMany(eventosTalVezAsista => eventosTalVezAsista.EventosTalVezAsista);
 
             modelBuilder.Entity<Evento>()
                 .HasOne(aula => aula.AulaDestinada)

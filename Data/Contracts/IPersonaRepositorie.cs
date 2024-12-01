@@ -24,7 +24,7 @@ namespace Data.Contracts
         void AgregarHijosAPadre(Guid idPadre, Persona alumno);
         void ModificarHijosAsignados(Persona entity, string idHijo, string accion);
         Alumno GetAlumno(Guid id);        
-        void ActualizarNotasRecibidas(Guid id, Nota nota);
+        void ActualizarNotasRecibidas(Guid id, NotaPersona nuevaNotaPersona);
         void ActualizarHistorialAlumno(Guid idAlumno, Historial nuevoHistorial);
         void ActualizarAusenciaAlumno(Guid idAlumno, Ausencia nuevaAusencia, string accion);
         Task<bool> EliminarAusenciasAlumno(Guid idAlumno);

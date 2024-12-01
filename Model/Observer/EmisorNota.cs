@@ -122,7 +122,7 @@ namespace Model.Observer
 
             mailMessage.AlternateViews.Add(view);           
             mailMessage.BodyEncoding = System.Text.Encoding.UTF8;
-            mailMessage.Subject = $"Nota Leida - {nota.nota.Titulo}";
+            mailMessage.Subject = $"Nota Leida - {nota.nota.Nota.Titulo}";
             mailMessage.SubjectEncoding = System.Text.Encoding.UTF8;
 
             smtpClient.Send(mailMessage);

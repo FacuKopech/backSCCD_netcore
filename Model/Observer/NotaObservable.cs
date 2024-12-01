@@ -8,7 +8,7 @@ namespace Model.Observer
 {
     public class NotaObservable : Subject
     {
-        public NotaObservable(Entities.Nota nota)
+        public NotaObservable(Entities.NotaPersona nota)
             : base(nota)
         {
         }

@@ -22,9 +22,6 @@ namespace Model.Entities
         public string Descripcion { get; set; }
         public Aula AulaDestinada { get; set; }
         public Persona Creador { get; set; }
-
-        public ICollection<Persona>? Asistiran = new List<Persona>();
-        public ICollection<Persona>? NoAsistiran = new List<Persona>();
-        public ICollection<Persona>? TalVezAsistan = new List<Persona>();
+        public ICollection<EventoPersona> EventoPersonas = new List<EventoPersona>();
     }
 }

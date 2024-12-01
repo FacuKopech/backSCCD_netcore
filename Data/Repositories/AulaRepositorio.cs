@@ -72,7 +72,7 @@ namespace Data.Repositories
         {            
             var aula = _context.Aulas.Where(x => x.Id == id)
                 .Include(i => i.Institucion)
-                .Include(d => d.Docente)
+                .Include(d => d.Docente).ThenInclude(notas => notas.NotaPersonas)
                 .Include(a => a.Asistencias).ThenInclude(asistencia => asistencia.AsistenciaAlumno)
                 .Include(alumnos => alumnos.Alumnos)
                 .FirstOrDefault();
@@ -98,7 +98,7 @@ namespace Data.Repositories
         {
             var aulasWAlumnos = _context.Aulas
                 .Include(a => a.Alumnos)
-                .Include(docente => docente.Docente)
+                .Include(docente => docente.Docente).ThenInclude(notas => notas.NotaPersonas)
                 .Include(aula => aula.Asistencias).ThenInclude(asistencia => asistencia.AsistenciaAlumno)
                 .ToList();
 
