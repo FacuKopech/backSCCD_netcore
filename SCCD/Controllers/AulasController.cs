@@ -6,6 +6,8 @@ using Dtos;
 using SCCD.Command.Ausencia;
 using AutoMapper;
 using System.Collections.Generic;
+using SCCD.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SCCD.Controllers
 {
@@ -39,7 +41,8 @@ namespace SCCD.Controllers
             _ausenciaCommand = ausenciaCommand;
             _notaRepositorie = notaRepositorie;
         }
-       
+
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idHijo}")]        
         public IActionResult ObtenerAulaDeHijo(Guid idHijo)
@@ -57,13 +60,14 @@ namespace SCCD.Controllers
 
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerAulasDeHijos()
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 var hijosPadreLogueado = _personaRepositorie.ObtenerHijos(personaLogueada.Id);
                 List<Aula> aulasHijos = new List<Aula>();
                 if (hijosPadreLogueado.Count() > 0)
@@ -106,6 +110,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idNota}")]
         public IActionResult ObtenerAulasDestinadasNota(Guid idNota)
@@ -133,13 +138,14 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerAulasDocente()
         {
             try
             {                
-                var docenteLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var docenteLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (docenteLogueado == null)
                 {
                     return NotFound(false);
@@ -156,13 +162,14 @@ namespace SCCD.Controllers
             }           
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerAulasInstitucion()
         {
             try
             {
-                var directivoLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var directivoLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (directivoLogueado == null)
                 {
                     return NotFound(false);
@@ -179,6 +186,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idAula}")]
         public IActionResult ObtenerAsistenciasAula(Guid idAula)
@@ -208,6 +216,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idAula}/{idAsistencia}/{esPresentes}")]
         public IActionResult ObtenerAsistenciaAlumnos(Guid idAula, Guid idAsistencia, bool esPresentes)
@@ -289,6 +298,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IEnumerable<AlumnoConEnumerables> ObtenerAlumnosAula([FromBody] Dictionary<string, Guid> aulaData)
@@ -333,6 +343,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idInstitucion}")]
         public IActionResult ObtenerPorcentajesAsistenciaAulas(Guid idInstitucion)
@@ -374,6 +385,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idInstitucion}")]
         public IActionResult ObtenerAlumnosSinAula(Guid idInstitucion)
@@ -396,6 +408,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idInstitucion}")]
         public IActionResult ObtenerDocentesSinAulaAsignada(Guid idInstitucion)
@@ -418,6 +431,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idInstitucion}")]
         public IActionResult ObtenerDocentesDeInstitucion(Guid idInstitucion)
@@ -440,7 +454,7 @@ namespace SCCD.Controllers
             }
         }
 
-
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]/")]
         public IActionResult AgregarAula([FromBody] AulaAAgregar aulaAAgregar)
@@ -529,6 +543,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idAula}")]
         public IActionResult EditarAula(Guid idAula, [FromBody]AulaAAgregar aulaAEditar)
@@ -577,6 +592,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idAlumno}")]
         public IActionResult EliminarAlumnoDeAula(Guid idAlumno)
@@ -591,6 +607,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idAula}")]
         public IActionResult AgrgarAlumnoExistenteAAula(Guid idAula, [FromBody]AlumnosExistentesAAgregar alumnosAAgregar)
@@ -634,6 +651,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idAula}")]
         public IActionResult AgrgarAlumnoNuevoAAula(Guid idAula, [FromBody]NuevoAlumno nuevoAlumnoAAgregar)
@@ -707,6 +725,7 @@ namespace SCCD.Controllers
 
         //Al alumno que, estando ausente en la toma de asistencia, si no tiene ninguna ausencia cargada para la fecha, se le crea automaticamente una ausencia con motivo "Toma de
         //asistencia - Hijo/a ausente"
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]/{idAula}")]
         public IActionResult CargarNuevaAsistencia(Guid idAula, [FromBody] List<Alumno> alumnos)
@@ -818,8 +837,9 @@ namespace SCCD.Controllers
                 }
                 _personaRepositorie.ActualizarAsistenciaAlumno(alumno.Id);
             }            
-        }              
+        }
 
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{idAula}")]
         public IActionResult EliminarAula(Guid idAula)

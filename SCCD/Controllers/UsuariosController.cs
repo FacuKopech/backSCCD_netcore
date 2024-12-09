@@ -8,6 +8,14 @@ using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Security.Cryptography;
+using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.SqlServer.Management.XEvent;
+using SCCD.Helpers;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace SCCD.Controllers
 {
@@ -20,7 +28,7 @@ namespace SCCD.Controllers
         private IGrupoRepositorie _grupoRepositorie;
         private ILoginAuditRepositorie _loginAuditRepositorie;
         private readonly IMapper _mapper;
-        private Session _session = Session.GetInstance();
+        private Model.Entities.Session _session = Model.Entities.Session.GetInstance();
 
         public UsuariosController(IUsuarioRepositorie usuariosRepositorie, IPersonaRepositorie personasRepositorie, IAulaRepositorie aulaRepositorie,
             IGrupoRepositorie grupoRepositorie, ILoginAuditRepositorie loginAuditRepositorie, IMapper mapper)
@@ -32,56 +40,135 @@ namespace SCCD.Controllers
             _loginAuditRepositorie = loginAuditRepositorie;
             _mapper = mapper;
         }
-        
+
+        //[HttpPost]
+        //[Route("/[controller]/[action]")]
+        //public IActionResult LogIn([FromBody] LoginRequest loginRequest)
+        //{
+        //    try
+        //    {
+        //        Usuario user = loginRequest.Email != "" ? _usuariosRepositorie.ObtenerUserWthGroupsWithEmail(loginRequest.Email) 
+        //            : _usuariosRepositorie.ObtenerUserWthGroups(loginRequest.Username, loginRequest.Clave);
+        //        if (user == null)
+        //        {
+        //            return NotFound("Usuario no encontrado");
+        //        }
+        //        else
+        //        {
+        //            _session.IdUserLogueado = user.Id.ToString();
+        //            _session.EmailUserLogueado = user.Email;
+        //            _session.UserNameUserLogueado = user.Username;
+        //            var persona = _personasRepositorie.ObtenerPersonaDeUsuario(user.Id);
+        //            if (persona != null)
+        //            {
+        //                LoggedInUser loggedInUser = new LoggedInUser
+        //                {
+        //                    Id = persona.Id,
+        //                    Nombre = persona.Nombre,
+        //                    Apellido = persona.Apellido,
+        //                    DNI = persona.DNI,
+        //                    Email = persona.Email,
+        //                    Telefono = persona.Telefono,
+        //                    Domicilio = persona.Domicilio,
+        //                    Usuario = persona.Usuario,
+        //                    Institucion = persona.Institucion,
+        //                    NotaPersonas = persona.NotaPersonas,
+        //                    Roles = new List<Grupo>()
+        //                };
+        //                if (persona.Usuario.Grupos.Count() > 0)
+        //                {
+        //                    foreach (var rol in persona.Usuario.Grupos)
+        //                    {
+        //                        loggedInUser.Roles.Add(rol);
+        //                    }
+        //                }
+        //                RegistrarLogin();
+        //                return Ok(loggedInUser);
+        //            }
+        //            else
+        //            {
+        //                return NotFound("Usuario sin Persona asignada");
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(ex.Message);
+        //    }
+        //}
+
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IActionResult LogIn([FromBody] LoginRequest loginRequest)
         {
             try
             {
-                Usuario user = loginRequest.Email != "" ? _usuariosRepositorie.ObtenerUserWthGroupsWithEmail(loginRequest.Email) 
+                Usuario user = loginRequest.Email != ""
+                    ? _usuariosRepositorie.ObtenerUserWthGroupsWithEmail(loginRequest.Email)
                     : _usuariosRepositorie.ObtenerUserWthGroups(loginRequest.Username, loginRequest.Clave);
+
                 if (user == null)
                 {
                     return NotFound("Usuario no encontrado");
                 }
-                else
+                var config = new ConfigurationBuilder()
+               .AddJsonFile("appsettings.json")
+               .Build();
+
+                string secretAccessKey = config["JwtSettings:SecretAccessKey"];
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretAccessKey));
+                var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                
+                var claims = new List<Claim>
                 {
-                    _session.IdUserLogueado = user.Id.ToString();
-                    _session.EmailUserLogueado = user.Email;
-                    _session.UserNameUserLogueado = user.Username;
-                    var persona = _personasRepositorie.ObtenerPersonaDeUsuario(user.Id);
-                    if (persona != null)
-                    {
-                        LoggedInUser loggedInUser = new LoggedInUser
-                        {
-                            Id = persona.Id,
-                            Nombre = persona.Nombre,
-                            Apellido = persona.Apellido,
-                            DNI = persona.DNI,
-                            Email = persona.Email,
-                            Telefono = persona.Telefono,
-                            Domicilio = persona.Domicilio,
-                            Usuario = persona.Usuario,
-                            Institucion = persona.Institucion,
-                            NotaPersonas = persona.NotaPersonas,
-                            Roles = new List<Grupo>()
-                        };
-                        if (persona.Usuario.Grupos.Count() > 0)
-                        {
-                            foreach (var rol in persona.Usuario.Grupos)
-                            {
-                                loggedInUser.Roles.Add(rol);
-                            }
-                        }
-                        RegistrarLogin();
-                        return Ok(loggedInUser);
-                    }
-                    else
-                    {
-                        return NotFound("Usuario sin Persona asignada");
-                    }
+                    new Claim(ClaimTypes.Name, user.Username),
+                    new Claim("userId", user.Id.ToString()),
+                    new Claim("email", user.Email),
+                    new Claim("username", user.Username),
+                };
+
+                claims.AddRange(user.Grupos.Select(grupo => new Claim(ClaimTypes.Role, grupo.Tipo)));
+
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(claims),
+                    Expires = DateTime.UtcNow.AddHours(1),
+                    Issuer = config["JwtSettings:Issuer"],
+                    Audience = config["JwtSettings:Audience"],
+                    SigningCredentials = signingCredentials,
+                };
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                var jwtToken = tokenHandler.WriteToken(token);
+
+                _session.Token = jwtToken;
+                var persona = _personasRepositorie.ObtenerPersonaDeUsuario(user.Id);
+                if (persona == null)
+                {
+                    return NotFound("Usuario sin Persona asignada");
                 }
+
+                LoggedInUser loggedInUser = new LoggedInUser
+                {
+                    Id = persona.Id,
+                    Nombre = persona.Nombre,
+                    Apellido = persona.Apellido,
+                    DNI = persona.DNI,
+                    Email = persona.Email,
+                    Telefono = persona.Telefono,
+                    Domicilio = persona.Domicilio,
+                    Usuario = persona.Usuario,
+                    Institucion = persona.Institucion,
+                    NotaPersonas = persona.NotaPersonas,
+                    Roles = persona.Usuario.Grupos.ToList()
+                };
+
+                return Ok(new
+                {
+                    token = jwtToken,
+                    user = loggedInUser
+                });
             }
             catch (Exception ex)
             {
@@ -89,18 +176,19 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IActionResult RegistrarLogin()
         {
             try
             {                
-                var persona = _personasRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var persona = _personasRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (!(persona is Admin))
                 {
                     LoginAudit nuevoLogueo = new LoginAudit
                     {
-                        UsuarioLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado)),
+                        UsuarioLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId"))),
                         FechaYHoraLogin = DateTime.Now
                     };
 
@@ -115,15 +203,16 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]")]
         public IActionResult ActualizarLoginAuditEnLogoutAction()
         {
             try
             {
-                if (_session.IdUserLogueado != "" && _session.IdUserLogueado != null)
+                if (JwtHelper.GetClaimValueFromToken(_session.Token, "userId") != "" && JwtHelper.GetClaimValueFromToken(_session.Token, "userId") != null)
                 {
-                    var audits = _loginAuditRepositorie.ObtenerLoginsDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                    var audits = _loginAuditRepositorie.ObtenerLoginsDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                     var ultimoAudit = audits.Last();
                     ultimoAudit.FechaYHoraLogout = DateTime.Now;
 
@@ -139,17 +228,18 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public Persona LoggedIn()
         {            
-            if (_session.EmailUserLogueado == null || _session.EmailUserLogueado == string.Empty)
+            if (JwtHelper.GetClaimValueFromToken(_session.Token, "email") == null || JwtHelper.GetClaimValueFromToken(_session.Token, "email") == string.Empty)
             {
                 return null;
             }
             else
             {
-                var user = _usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado));
+                var user = _usuariosRepositorie.ObtenerAsync(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (user != null)
                 {
                     return _personasRepositorie.ObtenerPersonaDeUsuario(user.Id);
@@ -161,33 +251,33 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public string GetEmailPersonaLogueada()
         {
-            return _session.EmailUserLogueado;
+            return JwtHelper.GetClaimValueFromToken(_session.Token, "email");
         }
 
-
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public bool LogOff()
         {
             ActualizarLoginAuditEnLogoutAction();
-            _session.EmailUserLogueado = string.Empty;
-            _session.UserNameUserLogueado= string.Empty;
-            _session.IdUserLogueado = string.Empty;
+            _session.Token = string.Empty;
 
             return true;
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerTipoPersonaLogueada()
         {
             try
             {
-                var persona = _personasRepositorie.ObtenerPersonaDeUsuario((_usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado)).Id));
+                var persona = _personasRepositorie.ObtenerPersonaDeUsuario((_usuariosRepositorie.ObtenerAsync(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId"))).Id));
 
                 if (persona != null)
                 {
@@ -217,6 +307,7 @@ namespace SCCD.Controllers
             
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerUsuariosSistema()
@@ -231,6 +322,7 @@ namespace SCCD.Controllers
             }           
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerUsuariosSinAsignacionPersona()
@@ -270,6 +362,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idUser}")]
         public IActionResult ObtenerRolesUsuario(Guid idUser)
@@ -299,6 +392,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IActionResult AgregarUsuario([FromBody] UsuarioACrear nuevoUser)
@@ -369,8 +463,7 @@ namespace SCCD.Controllers
 
         }
 
-
-
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idUser}")]        
         public IActionResult EditarUsuario(Guid idUser, [FromBody] UsuarioACrear usuarioAModificar)
@@ -476,6 +569,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{email}")]                
         public string RecuperarClave(string email)
@@ -498,6 +592,7 @@ namespace SCCD.Controllers
             return "ERROR";
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{claveAdmin}")]
         public IActionResult ValidarClaveAdmin(string ClaveAdmin)
@@ -506,7 +601,7 @@ namespace SCCD.Controllers
             {
                 if (ClaveAdmin != null && ClaveAdmin != "")
                 {
-                    var userLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado));
+                    var userLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                     if (userLogueado != null)
                     {
                         if (userLogueado.Clave == ClaveAdmin)
@@ -535,6 +630,7 @@ namespace SCCD.Controllers
            
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{email}/{firmaDe}")]
         public string EnviarTokenSeguridad(string email, string firmaDe)
@@ -557,6 +653,7 @@ namespace SCCD.Controllers
             return "ERROR";
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerRolesSistema()
@@ -583,9 +680,9 @@ namespace SCCD.Controllers
                 .Select(s => s[random.Next(s.Length)]).ToArray());
 
             return letterChars + numberChars;
-        }        
+        }
 
-
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]")]        
         public bool RecuperacionClave([FromBody] RecuperacionClave clave)
@@ -598,6 +695,7 @@ namespace SCCD.Controllers
             return false;
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]")]
         public IActionResult ResetearClave([FromBody] ReseteoClave clave)
@@ -606,7 +704,7 @@ namespace SCCD.Controllers
             {
                 if (clave != null)
                 {
-                    var userLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(_session.IdUserLogueado));
+                    var userLogueado = _usuariosRepositorie.ObtenerAsync(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                     if (userLogueado != null)
                     {
                         if (userLogueado.Clave != clave.ClaveActual)
@@ -639,6 +737,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]    
         public void EnviarToken(string email, string token, string motivo)
@@ -766,40 +865,9 @@ namespace SCCD.Controllers
             mailMessage.SubjectEncoding = System.Text.Encoding.UTF8;
 
             smtpClient.Send(mailMessage);
-        }        
-  
-        [HttpGet]
-        [Route("/[controller]/[action]")]
-        static string Encrypt(string clave)
-        {
-            try
-            {
-                string claveEncrypted = "";
-                string publickey = "12345678";
-                string secretkey = "87654321";
-                byte[] secretkeyByte = { };
-                secretkeyByte = System.Text.Encoding.UTF8.GetBytes(secretkey);
-                byte[] publickeybyte = { };
-                publickeybyte = System.Text.Encoding.UTF8.GetBytes(publickey);
-                MemoryStream ms = null;
-                CryptoStream cs = null;
-                byte[] inputbyteArray = System.Text.Encoding.UTF8.GetBytes(clave);
-                using (DESCryptoServiceProvider des = new DESCryptoServiceProvider())
-                {
-                    ms = new MemoryStream();
-                    cs = new CryptoStream(ms, des.CreateEncryptor(publickeybyte, secretkeyByte), CryptoStreamMode.Write);
-                    cs.Write(inputbyteArray, 0, inputbyteArray.Length);
-                    cs.FlushFinalBlock();
-                    claveEncrypted = Convert.ToBase64String(ms.ToArray());
-                }
-                return claveEncrypted;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message, ex.InnerException);
-            }
         }
 
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{idUser}")]        
         public IActionResult EliminarUsuario(Guid idUser)

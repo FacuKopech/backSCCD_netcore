@@ -4,6 +4,8 @@ using Model.Entities;
 using Dtos;
 using Model.Enums;
 using SCCD.FacadePattern;
+using SCCD.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SCCD.Controllers
 {
@@ -27,6 +29,8 @@ namespace SCCD.Controllers
             _historialAuditRepositorie = historialAuditRepositorie;
             _facade = new Facade(_personaRepositorie, _aulaRepositorie);
         }
+
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idHijo}")]
         public IEnumerable<Historial> ObtenerHistorialesDeAlumno(Guid idHijo)
@@ -40,6 +44,7 @@ namespace SCCD.Controllers
             return null;            
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idHijo}/{idHistorial}")]
         public IActionResult FirmarHistorial(Guid idHijo, Guid idHistorial)
@@ -71,8 +76,9 @@ namespace SCCD.Controllers
             {
                 return BadRequest(ex);
             }                       
-        }      
+        }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]/{idAlumno}")]
         public IActionResult AgregarHistorial(Guid idAlumno, [FromBody] HistorialACrear historialAAgregar)
@@ -134,8 +140,8 @@ namespace SCCD.Controllers
                 return BadRequest(ex);
             }                        
         }
-       
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idAlumno}/{idHistorial}")]
         public IActionResult EditHistorialAlumno(Guid idAlumno, Guid idHistorial, [FromBody] HistorialACrear historialAModificar)
@@ -200,6 +206,8 @@ namespace SCCD.Controllers
             }
                    
         }
+
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{idHistorial}/{idAlumno}")]
         public IActionResult DeleteHistorial(Guid IdHistorial, Guid idAlumno)
@@ -240,7 +248,7 @@ namespace SCCD.Controllers
         [NonAction]
         private IActionResult NuevaAuditHistorial(Historial historial, string accion)
         {
-            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
             if (personaLogueada != null)
             {
                 HistorialAudit nuevaAuditHistorial = new HistorialAudit

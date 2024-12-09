@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Model.Entities;
 using Dtos;
 using SCCD.Services.Interfaces;
+using SCCD.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SCCD.Controllers
 {
@@ -32,13 +34,14 @@ namespace SCCD.Controllers
             _mapper = mapper;
             _archivosService = archivosService;
         }
-        
+
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IEnumerable<Alumno> ObtenerMisHijos()
         {
             List<Alumno> hijosPadre = new List<Alumno>();
-            string IdUserLogueado = _session.IdUserLogueado;
+            string IdUserLogueado = JwtHelper.GetClaimValueFromToken(_session.Token, "userId");
             var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(IdUserLogueado));
             if (personaLogueada!= null)
             {
@@ -52,6 +55,7 @@ namespace SCCD.Controllers
             return null;
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idAlumno}")]
         public IEnumerable<Persona> ObtenerPadresDeAlumno(Guid idAlumno)
@@ -75,6 +79,7 @@ namespace SCCD.Controllers
             }                        
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerAlumnosSinPadreAsignado()
@@ -135,6 +140,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{IdPersona}")]
         public IActionResult ObtenerHijosDePersona(Guid IdPersona)
@@ -159,6 +165,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerPersonasSistema()
@@ -192,6 +199,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IActionResult AgregarPersona([FromBody] PersonaAAgregar personaAAgregar)
@@ -384,6 +392,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idPersona}")]
         public IActionResult EditarPersona(Guid IdPersona, [FromBody] PersonaModificar personaModificar)
@@ -542,6 +551,7 @@ namespace SCCD.Controllers
             return _personaRepositorie.ResetearFirmasHistorialesAlumno(idHijo);   
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idAlumno}")]
         public IActionResult EditarAlumno(Guid idAlumno, [FromBody] NuevoAlumno alumnoAEditar)
@@ -577,6 +587,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{idAlumno}")]
         public IActionResult EliminarAlumno(Guid idAlumno)
@@ -599,6 +610,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{idPersona}")]
         public IActionResult EliminarPersona(Guid IdPersona)

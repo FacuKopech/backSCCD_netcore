@@ -8,6 +8,8 @@ using SCCD.FacadePattern;
 using System.Data;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SCCD.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SCCD.Controllers
 {
@@ -36,6 +38,8 @@ namespace SCCD.Controllers
             _webHost = webHost;
             _facade = new Facade(_webHost, _personaRepositorie, _aulaRepositorie);
         }
+
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         // GET: Notas
@@ -44,7 +48,7 @@ namespace SCCD.Controllers
             try
             {
                 List<NotaConEnumerables> notasARetornar = new List<NotaConEnumerables>();
-                var id = Guid.Parse(_session.IdUserLogueado);
+                var id = Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId"));
                 var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(id);
                 var notas = _notaRepositorie.GetNotasRecibidasYFirmadas(personaLogueada.Id);
                 
@@ -79,11 +83,13 @@ namespace SCCD.Controllers
             }
             
         }
+
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IEnumerable<NotaConEnumerables> IndexNotasEmitidas() //Cambio ICollection a IEnumerable para el Front
         {            
-            var id = Guid.Parse(_session.IdUserLogueado);
+            var id = Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId"));
             var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(id);
             var notasEmitidas = _notaRepositorie.GetNotasEmitidasPersona(personaLogueada.Id);
             ICollection<NotaConEnumerables> notasEmitidasConEnumerables = new List<NotaConEnumerables>();
@@ -112,7 +118,8 @@ namespace SCCD.Controllers
             return notasARetornar;
             
         }
-
+        
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{id}")]        
         public bool LeerNota(Guid id)
@@ -128,7 +135,7 @@ namespace SCCD.Controllers
                 return false;
             }
 
-            string IdUserLogueado = _session.IdUserLogueado;
+            string IdUserLogueado = JwtHelper.GetClaimValueFromToken(_session.Token, "userId");
             var idUser = Guid.Parse(IdUserLogueado);
             var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(idUser);
             var notaPersona = nota.NotaPersonas.Where(x => x.NotaId == nota.Id && x.PersonaId == personaLogueada.Id).FirstOrDefault();
@@ -144,6 +151,8 @@ namespace SCCD.Controllers
             return false;
             
         }
+
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idNota}")]        
         public IActionResult FirmarNota(Guid idNota)
@@ -155,7 +164,7 @@ namespace SCCD.Controllers
                     var nota = _notaRepositorie.ObtenerAsync(idNota);
                     if (nota != null)
                     {
-                        _notaRepositorie.FirmaDeNota(nota, _session.EmailUserLogueado);
+                        _notaRepositorie.FirmaDeNota(nota, JwtHelper.GetClaimValueFromToken(_session.Token, "email"));
                         _facade.EnviarMailNotaFirmada(nota.Titulo, nota.Emisor.Email);
                         return Ok(true);
                     }
@@ -173,15 +182,16 @@ namespace SCCD.Controllers
             {
                 return BadRequest(ex);
             }
-        }        
+        }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{tipoDeNota}/{isPadre}/{esPadreYAlgoMas}/{enviaNotaComoPadre}")]
         public IEnumerable<Aula> ObtenerAulasParaNuevaNota(string tipoDeNota, bool isPadre, bool esPadreYAlgoMas, bool enviaNotaComoPadre)
         {            
             try
             {
-                string IdUserLogueado = _session.IdUserLogueado;
+                string IdUserLogueado = JwtHelper.GetClaimValueFromToken(_session.Token, "userId");
                 var id = Guid.Parse(IdUserLogueado);
                 var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(id);                
                 List<Aula> aulasAUsarNuevaNota = new List<Aula>();
@@ -283,6 +293,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idAula}/{enviaNotaComo}")]
         public IEnumerable<Persona> ObtenerListaDeDestinatariosParaNuevaNota(Guid idAula, string enviaNotaComo)
@@ -290,7 +301,7 @@ namespace SCCD.Controllers
             try
             {
                 List<Persona> destinatarios = new List<Persona>();
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (personaLogueada != null && idAula != Guid.Empty)
                 {
                     if (enviaNotaComo == "Padre")
@@ -306,7 +317,7 @@ namespace SCCD.Controllers
                                 {
                                     destinatarios.Add(directivo);
                                 }
-                                var personaLogueadaEnDestinatarios = destinatarios.Where(x => x.Email == _session.EmailUserLogueado).FirstOrDefault();
+                                var personaLogueadaEnDestinatarios = destinatarios.Where(x => x.Email == JwtHelper.GetClaimValueFromToken(_session.Token, "email")).FirstOrDefault();
                                 if (personaLogueadaEnDestinatarios != null)
                                 {
                                     destinatarios.Remove(personaLogueadaEnDestinatarios);
@@ -341,17 +352,13 @@ namespace SCCD.Controllers
                                         }
                                     }                                    
                                 }
-                                else
-                                {
-                                    return null;
-                                }
                             }
                             var directivoInstitucion = _personaRepositorie.ObtenerDirectivoInstitucion(aula.Institucion.Id);
                             if (directivoInstitucion != null)
                             {
                                 destinatarios.Add(directivoInstitucion);
                             }
-                            var personaLogueadaEnDestinatarios = destinatarios.Where(x => x.Email == _session.EmailUserLogueado).FirstOrDefault();
+                            var personaLogueadaEnDestinatarios = destinatarios.Where(x => x.Email == JwtHelper.GetClaimValueFromToken(_session.Token, "email")).FirstOrDefault();
                             if (personaLogueadaEnDestinatarios != null)
                             {
                                 destinatarios.Remove(personaLogueadaEnDestinatarios);
@@ -394,7 +401,7 @@ namespace SCCD.Controllers
                             {
                                 return null;
                             }
-                            var personaLogueadaEnDestinatarios = destinatarios.Where(x => x.Email == _session.EmailUserLogueado).FirstOrDefault();
+                            var personaLogueadaEnDestinatarios = destinatarios.Where(x => x.Email == JwtHelper.GetClaimValueFromToken(_session.Token, "email")).FirstOrDefault();
                             if (personaLogueadaEnDestinatarios != null)
                             {
                                 destinatarios.Remove(personaLogueadaEnDestinatarios);
@@ -419,13 +426,14 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/")]
         public IEnumerable<Alumno> ObtenerHijosPadreParaNuevaNota()
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (personaLogueada != null)
                 {
                     var hijosPadreLogueado = _personaRepositorie.ObtenerHijos(personaLogueada.Id);
@@ -449,6 +457,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idAula}")]
         public IEnumerable<Alumno> ObtenerAlumnosDeAulaParaNuevaNota(Guid idAula)
@@ -463,7 +472,7 @@ namespace SCCD.Controllers
                 return null;
             }
         }
-        
+
 
         //ESCENARIOS PARA EL ENVIO DE NOTAS
         //Solo hay 3 posibles tipos de notas a enviar:
@@ -487,6 +496,7 @@ namespace SCCD.Controllers
         //Si un DIRECTIVO envia una nota de tipo 2, puede elegir a quien sea dentro de la institucion, independientemente
         //del aula.
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]/")]        
         public IActionResult EnviarNuevaNota([FromBody] NotaACrear nuevaNota)
@@ -495,7 +505,7 @@ namespace SCCD.Controllers
             {
                 if (nuevaNota.Tipo != "" && nuevaNota.Titulo != "" && nuevaNota.Cuerpo != "")
                 {
-                    var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                    var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                     if (personaLogueada != null)
                     {
                         if (nuevaNota.EnviaNotaComo == "Padre")
@@ -1028,7 +1038,8 @@ namespace SCCD.Controllers
                 return BadRequest(ex);
             }            
         }
-        
+
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]/{idHijo}")]
         public IActionResult EnviarNuevaNotaADocente(Guid idHijo, [FromBody] NotaADocente nuevaNotaADocente)
@@ -1064,7 +1075,7 @@ namespace SCCD.Controllers
                             };
                             nuevaNota.NotaPersonas.Add(nuevaNotaPersona);
                             docente.NotaPersonas.Add(nuevaNotaPersona);
-                            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                            var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                             if (personaLogueada != null)
                             {
                                 nuevaNota.Emisor = personaLogueada;
@@ -1113,6 +1124,7 @@ namespace SCCD.Controllers
             
         }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]/{idAlumno}")]
         public IActionResult EnviarNuevaNotaAPadres(Guid idAlumno, [FromBody] NotaADocente nuevaNotaAPadres)
@@ -1135,7 +1147,7 @@ namespace SCCD.Controllers
                             NotaPersonas = new List<NotaPersona>(),
                         };
                        
-                        var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                        var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                         if (personaLogueada != null)
                         {
                             nuevaNota.Emisor = personaLogueada;
@@ -1199,6 +1211,7 @@ namespace SCCD.Controllers
 
         }
 
+        [Authorize]
         [HttpPost]
         [Consumes("multipart/form-data")]
         [Route("/[controller]/[action]/")]
@@ -1234,6 +1247,7 @@ namespace SCCD.Controllers
             }                       
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idNota}/")]
         public IActionResult ActualizarNombreArchivosNota(Guid idNota)
@@ -1265,7 +1279,7 @@ namespace SCCD.Controllers
             }
         }
 
-
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idNota}")]
         public IActionResult ObtenerArchivosNota(Guid idNota)
@@ -1325,6 +1339,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         private string UploadedFile(Nota nuevaNota)
@@ -1348,6 +1363,8 @@ namespace SCCD.Controllers
             }
             return fileName;
         }
+
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public async Task<IActionResult> VerArchivosNotas(Guid id)
@@ -1400,8 +1417,9 @@ namespace SCCD.Controllers
                 }
             }
 
-        }       
+        }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{id}")]
         public IActionResult Edit(Guid id, [FromBody] NotaAModificar notaAModificar)
@@ -1480,7 +1498,8 @@ namespace SCCD.Controllers
             }
             return BadRequest("El Id no existe");      
         }
-       
+
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{id}")]        
         public IActionResult DeleteConfirmed(Guid id)

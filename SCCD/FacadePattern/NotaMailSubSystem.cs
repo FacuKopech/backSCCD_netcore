@@ -1,5 +1,6 @@
 ﻿using Microsoft.SqlServer.Server;
 using Model.Entities;
+using SCCD.Helpers;
 using System.Buffers.Text;
 using System.Net;
 using System.Net.Mail;
@@ -205,8 +206,8 @@ namespace SCCD.FacadePattern
                             <td style='border-radius: 40px; background-color: white; padding: 0px 20px 20px 20px;'>
                                 <div class='divTextContainer' style='width: 99%; margin: 0px 4px 4px 4px;'>
                                     <img width='192' height='205' border=""0"" src='cid:{imageName}' style='display: block; background-position: center; background-repeat: no-repeat; background-size: contain; border: none; margin-left: 96px; margin-right: 96px; margin-bottom: 22px; margin-top: 10px;'>
-                                    <p style='sans-serif; width: 100%; text-align: center; margin: 0;'><strong>Su nota ha sido firmada por {_session.UserNameUserLogueado}.</strong></p>
-                                    <p style='sans-serif; width: 100%; text-align: center; margin: 0; '><strong><u>Email: {_session.EmailUserLogueado}</u></strong></p>
+                                    <p style='sans-serif; width: 100%; text-align: center; margin: 0;'><strong>Su nota ha sido firmada por {JwtHelper.GetClaimValueFromToken(_session.Token, "username")}.</strong></p>
+                                    <p style='sans-serif; width: 100%; text-align: center; margin: 0; '><strong><u>Email: {JwtHelper.GetClaimValueFromToken(_session.Token, "email")}</u></strong></p>
                                     <br>
                                     <p style = sans-serif; width: 100%; font-weight: 700; text-align: center; margin: 0;' > Nota: Esta dirección de correo envía emails automáticos. Por favor, no responda.</p>                              
                                     <p style = sans-serif; width: 100%; font-weight: 700; text-align: center; margin: 0;' >Ante cualquier duda o inconveniente, comuníquese con el docente y/o directivo correspondiente.</p>

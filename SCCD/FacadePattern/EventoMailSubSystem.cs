@@ -3,6 +3,7 @@ using Model.Entities;
 using System.Net.Mail;
 using System.Net;
 using System.Net.Mime;
+using SCCD.Helpers;
 
 namespace SCCD.FacadePattern
 {
@@ -288,7 +289,7 @@ namespace SCCD.FacadePattern
 
             MailMessage mailMessage = new MailMessage();
             MailAddress mail = new MailAddress("noreply.sccd@gmail.com");
-            Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+            Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
 
             mailMessage.Bcc.Add(evento.Creador.Email);
 
@@ -323,7 +324,7 @@ namespace SCCD.FacadePattern
                             <td style='border-radius: 40px; background-color: white; padding: 0px 20px 20px 20px;'>
                                 <div class='divTextContainer' style='width: 99%; margin: 0px 4px 4px 4px;'>
                                     <img width='154' height='160' border=""0"" src='cid:{imageName}' style='display: block; background-position: center; background-repeat: no-repeat; background-size: contain; border: none; margin-left: 123px; margin-right: 96px; margin-bottom: 22px; margin-top: 10px;'>                                                                    
-                                    <p style='sans-serif; width: 100%; text-align: center; margin: 0;'>{$"Recibiste una nueva confirmacion de asistencia de parte de {personaLogueada.Apellido}, {personaLogueada.Nombre} - Email {_session.EmailUserLogueado}"}</p> 
+                                    <p style='sans-serif; width: 100%; text-align: center; margin: 0;'>{$"Recibiste una nueva confirmacion de asistencia de parte de {personaLogueada.Apellido}, {personaLogueada.Nombre} - Email {JwtHelper.GetClaimValueFromToken(_session.Token, "email")}"}</p> 
                                     <p style='sans-serif; width: 100%; text-align: center; margin: 0;'><strong>
                                         {$"Para:<br><br>" +
                                         $"<u>Evento</u>: {evento.Motivo}<br>" +

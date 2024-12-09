@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.SqlServer.Management.Common;
 using Microsoft.SqlServer.Management.Smo;
 using Model.Entities;
@@ -8,6 +9,7 @@ namespace SCCD.Controllers
     [ApiController]
     public class SistemaController : Controller
     {
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/")]
         public IActionResult Backup()
@@ -47,6 +49,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/")]
         public IActionResult Restore()

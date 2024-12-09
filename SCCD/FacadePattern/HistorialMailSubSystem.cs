@@ -3,6 +3,7 @@ using System.Net.Mail;
 using System.Net;
 using Data.Contracts;
 using System.Net.Mime;
+using SCCD.Helpers;
 
 namespace SCCD.FacadePattern
 {
@@ -143,8 +144,8 @@ namespace SCCD.FacadePattern
                                         $"<u>Estado</u>: {Historial.Estado}<br>" +
                                         $"<u>Calificacion</u>: {Historial.Calificacion}"
                                         : $"El Historial \"<i>{Historial.Descripcion}</i>\", correspondiente al Alumno/a {alumno.Apellido}, {alumno.Nombre} ha sido firmado por:<br>" +
-                                        $"<u>Usuario</u>: {_session.UserNameUserLogueado}<br>" +
-                                        $"<u>Email</u>: {_session.EmailUserLogueado}")}
+                                        $"<u>Usuario</u>: {JwtHelper.GetClaimValueFromToken(_session.Token, "username")}<br>" +
+                                        $"<u>Email</u>: {JwtHelper.GetClaimValueFromToken(_session.Token, "email")}")}
                                     </strong>                                     
                                     <p style = sans-serif; width: 100%; font-weight: 700; text-align: center; margin: 0;' > Nota: Esta dirección de correo envía emails automáticos. Por favor, no responda.</p>                              
                                     <p style = sans-serif; width: 100%; font-weight: 700; text-align: center; margin: 0;' >Ante cualquier duda o inconveniente, comuníquese con el docente y/o directivo correspondiente.</p>

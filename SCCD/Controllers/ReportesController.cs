@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Model.Entities;
 using Dtos.Entities.Reportes;
+using SCCD.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SCCD.Controllers
 {
@@ -28,6 +30,7 @@ namespace SCCD.Controllers
             _notasRepositorie = notasRepositorie;
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")] 
         public IActionResult ObtenerLogInsAverage()
@@ -146,13 +149,14 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerAsistenciasPorAulaAverage()
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (personaLogueada != null && personaLogueada.Institucion != null)
                 {                    
                     List<AulasAvg> asistenciasPorAulaAvgs = new List<AulasAvg>();
@@ -188,13 +192,14 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerCondicionPorAulaAverage()
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (personaLogueada != null && personaLogueada.Institucion != null)
                 {
                     List<AulasAvg> condicionesPorAulaAvgs = new List<AulasAvg>();
@@ -253,6 +258,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerAuditoriasHistoriales()
@@ -294,13 +300,14 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerNotasEnviadasYRecibidasAverage()
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (personaLogueada != null)
                 {
                     var personasInstitucion = _personaRepositorie.ObtenerPadresDocentesDirectivosInstitucion(personaLogueada.Institucion.Id);

@@ -1,9 +1,11 @@
 ﻿using Data.Contracts;
 using Dtos;
 using Dtos.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Model.Entities;
 using SCCD.FacadePattern;
+using SCCD.Helpers;
 using SCCD.Services.Interfaces;
 
 namespace SCCD.Controllers
@@ -27,13 +29,14 @@ namespace SCCD.Controllers
             _facade = new Facade(_personaRepositorie, _aulaRepositorie);
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/")]
         public IActionResult ObtenerEventos()
         {
             try
             {
-                Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 if (personaLogueada != null && personaLogueada.Usuario != null && personaLogueada.Usuario.Grupos != null)
                 {
                     var tieneRolPadre = personaLogueada.Usuario.Grupos.Any(g => g.Tipo == "Padre");
@@ -146,6 +149,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IActionResult AgregarEvento([FromBody] EventoACrear nuevoEvento)
@@ -235,6 +239,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{id}")]
         public IActionResult ModificarEvento(Guid id, [FromBody] EventoAModificar eventoAModificar)
@@ -288,6 +293,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idEvento}/{confirmacion}")]
         public IActionResult ConfirmarAsistenciaEvento(Guid idEvento, string confirmacion, [FromBody] object body)
@@ -299,7 +305,7 @@ namespace SCCD.Controllers
                     Evento evento = _eventoRepositorie.ObtenerAsync(idEvento);
                     if (evento != null)
                     {
-                        Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                        Persona personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                         if (personaLogueada != null)
                         {
                             if (confirmacion == "Asiste")
@@ -376,6 +382,8 @@ namespace SCCD.Controllers
                 throw ex;
             }
         }
+
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{localidad}/{fecha}")]
         public async Task<IActionResult> ChequearClima(string localidad, string fecha)
@@ -396,7 +404,7 @@ namespace SCCD.Controllers
             }
         }
 
-
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{idEvento}")]
         public IActionResult EliminarEvento(Guid idEvento)

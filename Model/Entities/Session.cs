@@ -13,8 +13,6 @@
             }
             return _instance;
         }
-        public string IdUserLogueado { get; set; }
-        public string EmailUserLogueado { get; set; }
-        public string UserNameUserLogueado { get; set; }
+        public string Token { get; set; }
     }
 }

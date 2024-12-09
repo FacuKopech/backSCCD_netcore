@@ -7,6 +7,8 @@ using SCCD.FacadePattern;
 using System.Text.RegularExpressions;
 using SCCD.Services.Interfaces;
 using System.Runtime.CompilerServices;
+using SCCD.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SCCD.Controllers
 {
@@ -35,6 +37,7 @@ namespace SCCD.Controllers
             _facade = new Facade(_webHost, _personaRepositorie, _aulaRepositorie);
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{id}")]
         public IEnumerable<Ausencia> ObtenerAusenciasDeAlumno(Guid id)
@@ -55,6 +58,7 @@ namespace SCCD.Controllers
             return null;
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idAusencia}/{idAlumno}")]
         public bool GetEsAusenciaGenerica(Guid idAusencia, Guid idAlumno)
@@ -75,7 +79,7 @@ namespace SCCD.Controllers
 
                 if (idAlumno == null || idAlumno == Guid.Empty)
                 {
-                    personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                    personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                     hijosPadre = _personaRepositorie.ObtenerHijos(personaLogueada.Id);
                 }
                 else
@@ -108,7 +112,8 @@ namespace SCCD.Controllers
                 return false;
             }            
         }
-        
+
+        [Authorize]
         [HttpPost]        
         [Route("/[controller]/[action]/{idHijo}")]      
         public IActionResult AgregarAusencia(Guid idHijo, [FromBody] AusenciaModificar nuevaAusencia)
@@ -147,6 +152,7 @@ namespace SCCD.Controllers
             }            
         }
 
+        [Authorize]
         [HttpPost]
         [Consumes("multipart/form-data")]
         [Route("/[controller]/[action]")]
@@ -172,6 +178,7 @@ namespace SCCD.Controllers
             return false;
         }
 
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idAusencia}")]
         public IActionResult ActualizarNombreArchivosAusencia(Guid idAusencia)
@@ -205,13 +212,14 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IActionResult AgregarAusenciaGenerica([FromBody] AusenciaModificar nuevaAusencia)
         {
             try
             {
-                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                var personaLogueada = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                 var hijosPadreLogueado = _personaRepositorie.ObtenerHijos(personaLogueada.Id).OfType<Alumno>();
                 var hijoDePadre = hijosPadreLogueado.First();
                 var ausenciasHijo = this.ObtenerAusenciasDeAlumno(hijoDePadre.Id);
@@ -293,6 +301,8 @@ namespace SCCD.Controllers
             return fileName;
 
         }
+
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]/{idAusencia}")]
         public IActionResult ObtenerArchivosAusencia(Guid idAusencia)
@@ -352,6 +362,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idAusencia}/{idAlumno}/{aceptada}")]
         public IActionResult AceptarODenegarAusencia(Guid IdAusencia, Guid idAlumno, bool aceptada)
@@ -401,8 +412,9 @@ namespace SCCD.Controllers
             {
                 return BadRequest(ex);
             }                       
-        }       
-     
+        }
+
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{idAusencia}/{idHijo}")]
         public IActionResult EditarAusencia(Guid idAusencia, Guid idHijo, [FromBody] AusenciaModificar ausenciaModificar)
@@ -434,7 +446,7 @@ namespace SCCD.Controllers
                     }
                     else
                     {
-                        var padreLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(_session.IdUserLogueado));
+                        var padreLogueado = _personaRepositorie.ObtenerPersonaDeUsuario(Guid.Parse(JwtHelper.GetClaimValueFromToken(_session.Token, "userId")));
                         var hijosDePadre = _personaRepositorie.ObtenerHijos(padreLogueado.Id).OfType<Alumno>();
                         if (hijosDePadre != null)
                         {
@@ -456,9 +468,9 @@ namespace SCCD.Controllers
                 throw ex;
             }
        
-        }       
+        }
 
-
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{idAusencia}/{idHijo}")]
         public IActionResult DeleteConfirmed(Guid idAusencia, Guid idHijo)

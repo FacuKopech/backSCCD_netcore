@@ -1,4 +1,5 @@
 ﻿using Data.Contracts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Model.Entities;
 
@@ -14,7 +15,7 @@ namespace SCCD.Controllers
             _institucionRepositorie = institucionRepositorie;
         }
 
-
+        [Authorize]
         [HttpGet]
         [Route("/[controller]/[action]")]
         public IActionResult ObtenerInstitucionesSistema()
@@ -29,6 +30,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IActionResult AgregarInstitucion([FromBody] Institucion nuevaInstitucion)
@@ -75,6 +77,7 @@ namespace SCCD.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut]
         [Route("/[controller]/[action]/{IdInstitucion}")]
         public IActionResult EditarInstitucion(Guid IdInstitucion, [FromBody] Institucion institucionModificar)
@@ -126,7 +129,7 @@ namespace SCCD.Controllers
             }
         }
 
-
+        [Authorize]
         [HttpDelete]
         [Route("/[controller]/[action]/{idInstitucion}")]
         public IActionResult EliminarInstitucion(Guid IdInstitucion)
