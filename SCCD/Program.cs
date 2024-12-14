@@ -11,7 +11,6 @@ using SCCD.Services.Interfaces;
 using SCCD.Services.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Model.CompositePattern;
 using SCCD.Services.CompositePattern;
 
 var builder = WebApplication.CreateBuilder(args);

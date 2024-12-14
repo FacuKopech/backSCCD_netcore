@@ -1,5 +1,4 @@
 ﻿using Data.Contracts;
-using Model.CompositePattern;
 using Model.Entities;
 
 namespace SCCD.Services.CompositePattern
