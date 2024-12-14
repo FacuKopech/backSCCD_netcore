@@ -11,6 +11,8 @@ using SCCD.Services.Interfaces;
 using SCCD.Services.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Model.CompositePattern;
+using SCCD.Services.CompositePattern;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +47,16 @@ builder.Services.AddScoped<IReportesRepositorie, ReportesRepositorio>();
 builder.Services.AddScoped<IEventoRepositorie, EventoRepositorie>();
 builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IArchivosService, ArchivosService>();
+builder.Services.AddScoped<NormalLoginAuth>();
+builder.Services.AddScoped<GoogleAuth>();
+builder.Services.AddScoped<CompositeAuth>(serviceProvider =>
+{
+    var compositeAuth = new CompositeAuth();
+    compositeAuth.AddAuthMethod(serviceProvider.GetRequiredService<NormalLoginAuth>());
+    compositeAuth.AddAuthMethod(serviceProvider.GetRequiredService<GoogleAuth>());
+    return compositeAuth;
+});
+
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAusenciaCommand, AgregarAusenciaCommand>();

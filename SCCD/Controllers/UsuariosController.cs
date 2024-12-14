@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.SqlServer.Management.XEvent;
 using SCCD.Helpers;
 using System.IdentityModel.Tokens.Jwt;
+using SCCD.Services.CompositePattern;
 
 namespace SCCD.Controllers
 {
@@ -41,76 +42,26 @@ namespace SCCD.Controllers
             _mapper = mapper;
         }
 
-        //[HttpPost]
-        //[Route("/[controller]/[action]")]
-        //public IActionResult LogIn([FromBody] LoginRequest loginRequest)
-        //{
-        //    try
-        //    {
-        //        Usuario user = loginRequest.Email != "" ? _usuariosRepositorie.ObtenerUserWthGroupsWithEmail(loginRequest.Email) 
-        //            : _usuariosRepositorie.ObtenerUserWthGroups(loginRequest.Username, loginRequest.Clave);
-        //        if (user == null)
-        //        {
-        //            return NotFound("Usuario no encontrado");
-        //        }
-        //        else
-        //        {
-        //            _session.IdUserLogueado = user.Id.ToString();
-        //            _session.EmailUserLogueado = user.Email;
-        //            _session.UserNameUserLogueado = user.Username;
-        //            var persona = _personasRepositorie.ObtenerPersonaDeUsuario(user.Id);
-        //            if (persona != null)
-        //            {
-        //                LoggedInUser loggedInUser = new LoggedInUser
-        //                {
-        //                    Id = persona.Id,
-        //                    Nombre = persona.Nombre,
-        //                    Apellido = persona.Apellido,
-        //                    DNI = persona.DNI,
-        //                    Email = persona.Email,
-        //                    Telefono = persona.Telefono,
-        //                    Domicilio = persona.Domicilio,
-        //                    Usuario = persona.Usuario,
-        //                    Institucion = persona.Institucion,
-        //                    NotaPersonas = persona.NotaPersonas,
-        //                    Roles = new List<Grupo>()
-        //                };
-        //                if (persona.Usuario.Grupos.Count() > 0)
-        //                {
-        //                    foreach (var rol in persona.Usuario.Grupos)
-        //                    {
-        //                        loggedInUser.Roles.Add(rol);
-        //                    }
-        //                }
-        //                RegistrarLogin();
-        //                return Ok(loggedInUser);
-        //            }
-        //            else
-        //            {
-        //                return NotFound("Usuario sin Persona asignada");
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(ex.Message);
-        //    }
-        //}
-
+        
         [HttpPost]
         [Route("/[controller]/[action]")]
         public IActionResult LogIn([FromBody] LoginRequest loginRequest)
         {
             try
             {
-                Usuario user = loginRequest.Email != ""
-                    ? _usuariosRepositorie.ObtenerUserWthGroupsWithEmail(loginRequest.Email)
-                    : _usuariosRepositorie.ObtenerUserWthGroups(loginRequest.Username, loginRequest.Clave);
+                var normalAuth = new NormalLoginAuth(_usuariosRepositorie);
+                var googleAuth = new GoogleAuth(_usuariosRepositorie);
 
+                var compositeAuth = new CompositeAuth();
+                compositeAuth.AddAuthMethod(normalAuth);
+                compositeAuth.AddAuthMethod(googleAuth);
+
+                var user = compositeAuth.Authenticate(loginRequest);
                 if (user == null)
                 {
-                    return NotFound("Usuario no encontrado");
+                    return NotFound("Usuario no encontrado o credenciales inválidas");
                 }
+             
                 var config = new ConfigurationBuilder()
                .AddJsonFile("appsettings.json")
                .Build();
